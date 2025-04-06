@@ -8,9 +8,10 @@ class BasicDetection(L.LightningModule):
     """Basic Multiclass Classification framework\n
     We assume labels of shape (C)
     """
-    def __init__(self, num_classes: int):
+    def __init__(self, num_classes: int, optimizer: str ="Adam"):
         super().__init__()
         self.num_classes = num_classes
+        self.optimizer = optimizer
         self.accuracy = Accuracy(task="multiclass", num_classes=num_classes)
         self.preprocessing = None
     
@@ -53,5 +54,5 @@ class BasicDetection(L.LightningModule):
         return acc
     
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters())
+        optimizer = getattr(optim, self.optimizer)(self.parameters())
         return optimizer
