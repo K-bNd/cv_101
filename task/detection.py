@@ -2,25 +2,29 @@ from torch import optim, nn
 from torchmetrics import Accuracy
 import lightning as L
 import torch
-import torch.functional as F
-from models import BasicNN
+from typing import Callable, Optional
 
 class BasicDetection(L.LightningModule):
     """Basic Multiclass Classification framework\n
     We assume labels of shape (C)
     """
-    def __init__(self, input_height: int, input_width:int, num_classes: int, hidden_dim:int):
+    def __init__(self, num_classes: int):
         super().__init__()
         self.num_classes = num_classes
-        self.model = BasicNN(input_height * input_width, hidden_dim, num_classes).model
         self.accuracy = Accuracy(task="multiclass", num_classes=num_classes)
+        self.preprocessing = None
+    
+    def select_model(self, model: nn.Module, preprocessing: Optional[Callable]=None):
+        self.model = model
+        self.preprocessing = preprocessing
     
     def forward(self, x):
+        x = self.preprocessing(x) if self.preprocessing else x
         return self.model(x)
     
     def training_step(self, batch, batch_idx):
         x, y = batch
-        x = x.view(x.size(0), -1)
+        x = self.preprocessing(x) if self.preprocessing else x
         logits = self.model(x)
         loss = nn.functional.cross_entropy(input=logits, target=y)
         acc = self.accuracy(logits, y)
@@ -30,7 +34,7 @@ class BasicDetection(L.LightningModule):
 
     def test_step(self, batch, batch_idx):
         x, y = batch
-        x = x.view(x.size(0), -1)
+        x = self.preprocessing(x) if self.preprocessing else x
         logits = self.model(x)
         loss = nn.functional.cross_entropy(input=logits, target=y)
         acc = self.accuracy(logits, y)
@@ -40,7 +44,7 @@ class BasicDetection(L.LightningModule):
     
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        x = x.view(x.size(0), -1)
+        x = self.preprocessing(x) if self.preprocessing else x
         logits = self.model(x)
         loss = nn.functional.cross_entropy(input=logits, target=y)
         acc = self.accuracy(logits, y)

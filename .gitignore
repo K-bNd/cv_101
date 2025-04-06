@@ -14,3 +14,6 @@ lightning_logs/
 wandb/
 MNIST/
 
+# File types
+*.ipynb
+*.lock
