@@ -4,7 +4,7 @@ import lightning as L
 import torch
 from typing import Callable, Optional
 
-class BasicDetection(L.LightningModule):
+class BasicClassification(L.LightningModule):
     """Basic Multiclass Classification framework\n
     We assume labels of shape (C)
     """
@@ -14,6 +14,7 @@ class BasicDetection(L.LightningModule):
         self.optimizer = optimizer
         self.accuracy = Accuracy(task="multiclass", num_classes=num_classes)
         self.preprocessing = None
+        self.loss_fn = nn.CrossEntropyLoss()
     
     def select_model(self, model: nn.Module, preprocessing: Optional[Callable]=None):
         self.model = model
@@ -27,7 +28,7 @@ class BasicDetection(L.LightningModule):
         x, y = batch
         x = self.preprocessing(x) if self.preprocessing else x
         logits = self.model(x)
-        loss = nn.functional.cross_entropy(input=logits, target=y)
+        loss = self.loss_fn(input=logits, target=y)
         acc = self.accuracy(logits, y)
         self.log("train/loss", loss, prog_bar=True)
         self.log("train/acc", acc, prog_bar=True)
@@ -37,7 +38,7 @@ class BasicDetection(L.LightningModule):
         x, y = batch
         x = self.preprocessing(x) if self.preprocessing else x
         logits = self.model(x)
-        loss = nn.functional.cross_entropy(input=logits, target=y)
+        loss = self.loss_fn(input=logits, target=y)
         acc = self.accuracy(logits, y)
         self.log("test/loss", loss, prog_bar=True)
         self.log("test/acc", acc, prog_bar=True)
@@ -47,7 +48,7 @@ class BasicDetection(L.LightningModule):
         x, y = batch
         x = self.preprocessing(x) if self.preprocessing else x
         logits = self.model(x)
-        loss = nn.functional.cross_entropy(input=logits, target=y)
+        loss = self.loss_fn(input=logits, target=y)
         acc = self.accuracy(logits, y)
         self.log("val/loss", loss, prog_bar=True)
         self.log("val/acc", acc, prog_bar=True)

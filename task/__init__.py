@@ -1,1 +1,1 @@
-from .detection import BasicDetection
+from .classification import BasicClassification
