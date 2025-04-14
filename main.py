@@ -9,7 +9,7 @@ from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import EarlyStopping, Callback
 
 
-def main_imagenette():
+def main_imagenette(batch_size=128):
     classifier = BasicClassification(num_classes=10)
     vgg16 = VGG16(num_classes=10)
     classifier.select_model(vgg16)
@@ -40,13 +40,13 @@ def main_imagenette():
         ),
     )
     train_dataloader = utils.data.DataLoader(
-        train_dataset, num_workers=7, batch_size=512
+        train_dataset, num_workers=7, batch_size=batch_size
     )
     test_dataset, val_dataset = utils.data.random_split(
         test_dataset, [0.8, 0.2], torch.Generator().manual_seed(1)
     )
-    test_dataloader = utils.data.DataLoader(test_dataset, num_workers=7, batch_size=8)
-    val_dataloader = utils.data.DataLoader(val_dataset, num_workers=7, batch_size=8)
+    test_dataloader = utils.data.DataLoader(test_dataset, num_workers=7, batch_size=batch_size)
+    val_dataloader = utils.data.DataLoader(val_dataset, num_workers=7, batch_size=batch_size)
     wandb_logger = WandbLogger(project="Imagenette")
     wandb_logger.watch(classifier)
     callbacks: list[Callback] = [EarlyStopping("val/loss", patience=10)]
@@ -100,4 +100,6 @@ def main_mnist():
 
 
 if __name__ == "__main__":
-    main_imagenette()
+    torch.cuda.memory._record_memory_history()
+    main_imagenette(batch_size=32)
+    torch.cuda.memory._dump_snapshot("my_snapshot.pickle")

@@ -67,7 +67,6 @@ class VGG16(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         conv_output = self.conv(x)
-        print(conv_output.shape)
         return self.dense(conv_output)
 
     @staticmethod
