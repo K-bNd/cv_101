@@ -57,7 +57,8 @@ def main_imagenette(batch_size=128):
         train_dataloaders=train_dataloader,
         val_dataloaders=val_dataloader,
     )
-    trainer.test(classifier, dataloaders=[test_dataloader, val_dataloader, train_dataloader])
+    trainer.test(classifier, dataloaders=test_dataloader)
+    print(f"Complete accuracy over training run = {classifier.accuracy.compute()}")
     return
 
 
