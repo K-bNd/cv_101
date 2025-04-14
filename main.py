@@ -150,7 +150,7 @@ def main_imagenette(batch_size: int = 128, early_stopping_patience: int = 10):
     return
 
 
-def main_mnist():
+def main_mnist(batch_size: int = 512, early_stopping_patience: int = 10):
     classifier = BasicClassification(num_classes=10)
     # ffn = BasicNN(in_features=28*28, hidden_features=800, out_features=10)
     # cnn = BasicCNN(in_channels=1)
@@ -169,7 +169,7 @@ def main_mnist():
         transform=v2.Compose([v2.ToImage(), v2.ToDtype(torch.float32, scale=True)]),
     )
     train_dataloader = utils.data.DataLoader(
-        train_dataset, num_workers=7, batch_size=512
+        train_dataset, num_workers=7, batch_size=batch_size
     )
     test_dataset, val_dataset = utils.data.random_split(
         test_dataset, [0.8, 0.2], torch.Generator().manual_seed(1)
@@ -178,7 +178,10 @@ def main_mnist():
     val_dataloader = utils.data.DataLoader(val_dataset, num_workers=7, batch_size=64)
     wandb_logger = WandbLogger(project="MNIST")
     wandb_logger.watch(classifier)
-    callbacks: list[Callback] = [EarlyStopping("val/loss", patience=10)]
+    callbacks: list[Callback] = [
+        EarlyStopping("train/loss", patience=early_stopping_patience),
+        LearningRateMonitor("epoch"),
+    ]
     trainer = L.Trainer(max_epochs=500, logger=wandb_logger, callbacks=callbacks)
     trainer.fit(
         model=classifier,
@@ -200,7 +203,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     torch.cuda.memory._record_memory_history()
-    main_imagenette(
+    main_cifar10(
         batch_size=args.batch_size, early_stopping_patience=args.early_stopping_patience
     )
     torch.cuda.memory._dump_snapshot("my_snapshot.pickle")
