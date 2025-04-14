@@ -10,9 +10,15 @@ class BasicClassification(L.LightningModule):
     We assume labels of shape (C)
     """
 
-    def __init__(self, num_classes: int, optimizer: str = "Adam"):
+    def __init__(
+        self,
+        num_classes: int,
+        early_stopping_patience: int = 10,
+        optimizer: str = "Adam",
+    ):
         super().__init__()
         self.num_classes = num_classes
+        self.early_stopping_patience = early_stopping_patience
         self.optimizer = optimizer
         self.accuracy = Accuracy(task="multiclass", num_classes=num_classes)
         self.preprocessing = None
@@ -58,4 +64,12 @@ class BasicClassification(L.LightningModule):
 
     def configure_optimizers(self):
         optimizer = getattr(optim, self.optimizer)(self.parameters())
-        return optimizer
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": optim.lr_scheduler.ReduceLROnPlateau(
+                    optimizer=optimizer, patience=self.early_stopping_patience // 3
+                ),
+                "monitor": "val/loss",
+            },
+        }
