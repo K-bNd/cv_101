@@ -7,6 +7,7 @@ from models import BasicCNN, BasicNN, VGG16
 import lightning as L
 from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import EarlyStopping, Callback
+from argparse import ArgumentParser
 
 
 def main_imagenette(batch_size=128):
@@ -50,7 +51,7 @@ def main_imagenette(batch_size=128):
     wandb_logger = WandbLogger(project="Imagenette")
     wandb_logger.watch(classifier)
     callbacks: list[Callback] = [EarlyStopping("val/loss", patience=10)]
-    trainer = L.Trainer(max_epochs=500, logger=wandb_logger, callbacks=callbacks, log_every_n_steps=10)
+    trainer = L.Trainer(max_epochs=500, logger=wandb_logger, callbacks=callbacks, log_every_n_steps=batch_size)
     trainer.fit(
         model=classifier,
         train_dataloaders=train_dataloader,
@@ -100,6 +101,14 @@ def main_mnist():
 
 
 if __name__ == "__main__":
+    parser = ArgumentParser()
+
+    # Trainer arguments
+    parser.add_argument("--batch_size", type=int, default=128)
+
+    # Parse the user inputs and defaults (returns a argparse.Namespace)
+    args = parser.parse_args()
+
     torch.cuda.memory._record_memory_history()
-    main_imagenette(batch_size=32)
+    main_imagenette(batch_size=args.batch_size)
     torch.cuda.memory._dump_snapshot("my_snapshot.pickle")
