@@ -50,14 +50,14 @@ def main_imagenette(batch_size=128):
     val_dataloader = utils.data.DataLoader(val_dataset, num_workers=7, batch_size=batch_size)
     wandb_logger = WandbLogger(project="Imagenette")
     wandb_logger.watch(classifier)
-    callbacks: list[Callback] = [EarlyStopping("val/loss", patience=10)]
+    callbacks: list[Callback] = [EarlyStopping("train/loss", patience=10)]
     trainer = L.Trainer(max_epochs=500, logger=wandb_logger, callbacks=callbacks, log_every_n_steps=len(train_dataloader))
     trainer.fit(
         model=classifier,
         train_dataloaders=train_dataloader,
         val_dataloaders=val_dataloader,
     )
-    trainer.test(classifier, dataloaders=test_dataloader)
+    trainer.test(classifier, dataloaders=[test_dataloader, val_dataloader, train_dataloader])
     return
 
 
