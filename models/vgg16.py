@@ -63,6 +63,7 @@ class VGG16(nn.Module):
             nn.Linear(in_features=4096, out_features=4096),
             nn.Linear(in_features=4096, out_features=1000),
             nn.Linear(in_features=1000, out_features=num_classes),
+            nn.Softmax(dim=1)
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
