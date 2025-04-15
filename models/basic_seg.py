@@ -229,15 +229,6 @@ class SegNet(nn.Module):
         # endregion
 
         # region decoder
-        print(
-            "Encoding done",
-            x5_indices.size(),
-            x4_indices.size(),
-            x3_indices.size(),
-            x2_indices.size(),
-            x1_indices.size(),
-        )
-        print("Shapes ", x5.size(), x4.size(), x3.size(), x2.size(), x1.size())
         x6_unpool = self.unpool(x5_pool, x5_indices, output_size=x5.size())
         x6 = self.deconv1(x6_unpool)
         x7_unpool = self.unpool(x6, x4_indices, output_size=x4.size())
@@ -248,7 +239,8 @@ class SegNet(nn.Module):
         x9 = self.deconv4(x9_unpool)
         x10_unpool = self.unpool(x9, x1_indices, x1.size())
         x10 = self.deconv5(x10_unpool)
-        print("This should be an image ?", x10.size())
+        # endregion
+
         preds = self.softmax(x10)
         return preds
 
