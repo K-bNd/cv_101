@@ -3,7 +3,7 @@ from torch import utils
 from torchvision.datasets import MNIST, Imagenette, CIFAR10
 from torchvision.transforms import v2
 from task import BasicClassification
-from models import BasicCNN, BasicNN, VGG16
+from models import LeNet, BasicNN, VGG16
 import lightning as L
 from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import EarlyStopping, Callback, LearningRateMonitor
@@ -202,8 +202,6 @@ if __name__ == "__main__":
     # Parse the user inputs and defaults (returns a argparse.Namespace)
     args = parser.parse_args()
 
-    torch.cuda.memory._record_memory_history()
     main_cifar10(
         batch_size=args.batch_size, early_stopping_patience=args.early_stopping_patience
     )
-    torch.cuda.memory._dump_snapshot("my_snapshot.pickle")

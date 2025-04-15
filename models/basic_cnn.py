@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch
 
 
-class BasicCNN(nn.Module):
+class LeNet(nn.Module):
     """LeNet-5 Architecture"""
 
     def __init__(self, in_channels: int, num_classes: int = 10):
