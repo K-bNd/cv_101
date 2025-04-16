@@ -16,6 +16,7 @@ class BasicSegmentation(L.LightningModule):
         num_classes: int = 3,
         optimizer: str = "Adam",
         input_format: Literal["one-hot", "index"] = "index",
+        early_stopping_patience: int = 10,
     ):
         super().__init__()
         self.num_classes = num_classes
@@ -25,6 +26,7 @@ class BasicSegmentation(L.LightningModule):
         self.loss_fn = GeneralizedDiceScore(
             num_classes=num_classes, input_format=input_format
         )
+        self.early_stopping_patience = early_stopping_patience
 
     def select_model(self, model: nn.Module, postprocessing: Optional[Callable] = None):
         self.model = model
@@ -68,4 +70,12 @@ class BasicSegmentation(L.LightningModule):
 
     def configure_optimizers(self):
         optimizer = getattr(optim, self.optimizer)(self.parameters())
-        return optimizer
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": optim.lr_scheduler.ReduceLROnPlateau(
+                    optimizer=optimizer, patience=self.early_stopping_patience // 3
+                ),
+                "monitor": "val/loss",
+            },
+        }
