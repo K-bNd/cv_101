@@ -23,10 +23,12 @@ class BasicSegmentation(L.LightningModule):
         self.optimizer = optimizer
         self.postprocessing = None
         self.accuracy = MeanIoU(num_classes=num_classes, input_format=input_format)
-        self.loss_fn = GeneralizedDiceScore(
+        self.loss_fn = nn.CrossEntropyLoss()
+        self.loss_fn_2 = GeneralizedDiceScore(
             num_classes=num_classes, input_format=input_format
         )
         self.early_stopping_patience = early_stopping_patience
+        
 
     def select_model(self, model: nn.Module, postprocessing: Optional[Callable] = None):
         self.model = model
@@ -41,9 +43,8 @@ class BasicSegmentation(L.LightningModule):
         x, y = batch
         logits = self.model(x)
         preds = self.postprocessing(logits) if self.postprocessing else logits
-        loss = 1 - self.loss_fn(preds, y)
-        loss.requires_grad = True
-        acc = self.accuracy(preds, y)
+        loss = self.loss_fn(preds, y)
+        acc = self.accuracy(preds[:, None, :, :], y)
         self.log("train/loss", loss, prog_bar=True)
         self.log("train/acc", acc, prog_bar=True)
         return loss
@@ -52,8 +53,8 @@ class BasicSegmentation(L.LightningModule):
         x, y = batch
         logits = self.model(x)
         preds = self.postprocessing(logits) if self.postprocessing else logits
-        loss = 1 - self.loss_fn(preds, y)
-        acc = self.accuracy(preds, y)
+        loss = self.loss_fn(preds, y)
+        acc = self.accuracy(preds[:, None, :, :], y)
         self.log("test/loss", loss, prog_bar=True)
         self.log("test/acc", acc, prog_bar=True)
         return acc
@@ -62,8 +63,8 @@ class BasicSegmentation(L.LightningModule):
         x, y = batch
         logits = self.model(x)
         preds = self.postprocessing(logits) if self.postprocessing else logits
-        loss = 1 - self.loss_fn(preds, y)
-        acc = self.accuracy(preds, y)
+        loss = self.loss_fn(preds, y)
+        acc = self.accuracy(preds[:, None, :, :], y)
         self.log("val/loss", loss, prog_bar=True)
         self.log("val/acc", acc, prog_bar=True)
         return acc
