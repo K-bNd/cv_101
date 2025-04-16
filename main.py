@@ -195,7 +195,7 @@ def main_mnist(batch_size: int = 512, early_stopping_patience: int = 10):
 def main_oxford(batch_size: int = 128, early_stopping_patience: int = 10):
     segment = BasicSegmentation(num_classes=3)
     model = SegNet(num_classes=3)
-    segment.select_model(model, postprocessing=lambda x: torch.argmax(x, dim=1, keepdim=True))
+    segment.select_model(model)
     image_transform = v2.Compose(
         [
             v2.ToImage(),
