@@ -8,7 +8,14 @@ from torchmetrics.segmentation import MeanIoU, GeneralizedDiceScore
 
 class BasicSegmentation(L.LightningModule):
     """Basic Semantic Segmentation framework\n
-    We assume labels of shape (H, W)
+    Expected shapes:
+        labels: (N, H, W)
+        preds: (N, C, H, W) with class probabilities
+    with:
+        N: batch_size
+        C: number of classes
+        H: height
+        W: width
     """
 
     def __init__(
