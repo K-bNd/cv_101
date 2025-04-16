@@ -212,7 +212,7 @@ def main_oxford(batch_size: int = 128, early_stopping_patience: int = 10):
             v2.ToImage(),
             v2.Resize((224, 224)),
             v2.ToDtype(torch.long),
-            v2.Lambda(lambda x: x - 1) # indexes start at 1 according to readme
+            v2.Lambda(lambda x: torch.squeeze(x) - 1) # indexes start at 1 according to readme, squeese for CE loss
         ]
     )
     trainval_dataset = OxfordIIITPet(
