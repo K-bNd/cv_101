@@ -226,6 +226,7 @@ def main_oxford(batch_size: int = 128, early_stopping_patience: int = 10):
     test_dataset = OxfordIIITPet(
         "./datasets/oxford-iit-pets",
         split="test",
+        target_types="segmentation",        
         download=True,
         transform=image_transform,
         target_transform=target_transform
