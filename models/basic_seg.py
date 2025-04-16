@@ -243,9 +243,3 @@ class SegNet(nn.Module):
 
         preds = self.softmax(x10)
         return preds
-
-
-if __name__ == "__main__":
-    x = torch.ones((1, 3, 224, 224), dtype=torch.float32)
-    model = SegNet()
-    print(model(x).shape)
