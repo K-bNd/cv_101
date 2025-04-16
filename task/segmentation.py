@@ -44,7 +44,7 @@ class BasicSegmentation(L.LightningModule):
         logits = self.model(x)
         preds = self.postprocessing(logits) if self.postprocessing else logits
         loss = self.loss_fn(preds, y)
-        acc = self.accuracy(preds, y[:, None, :, :])
+        acc = self.accuracy(torch.argmax(preds dim=1, keepdim=True), y[:, None, :, :])
         self.log("train/loss", loss, prog_bar=True)
         self.log("train/acc", acc, prog_bar=True)
         return loss
@@ -54,7 +54,7 @@ class BasicSegmentation(L.LightningModule):
         logits = self.model(x)
         preds = self.postprocessing(logits) if self.postprocessing else logits
         loss = self.loss_fn(preds, y)
-        acc = self.accuracy(preds, y[:, None, :, :])
+        acc = self.accuracy(torch.argmax(preds dim=1, keepdim=True), y[:, None, :, :])
         self.log("test/loss", loss, prog_bar=True)
         self.log("test/acc", acc, prog_bar=True)
         return acc
@@ -64,7 +64,7 @@ class BasicSegmentation(L.LightningModule):
         logits = self.model(x)
         preds = self.postprocessing(logits) if self.postprocessing else logits
         loss = self.loss_fn(preds, y)
-        acc = self.accuracy(preds, y[:, None, :, :])
+        acc = self.accuracy(torch.argmax(preds dim=1, keepdim=True), y[:, None, :, :])
         self.log("val/loss", loss, prog_bar=True)
         self.log("val/acc", acc, prog_bar=True)
         return acc
