@@ -60,7 +60,6 @@ class BasicSegmentation(L.LightningModule):
         x, y = batch
         logits = self.model(x)
         preds = self.postprocessing(logits) if self.postprocessing else logits
-        print(preds.shape, preds[0, :, 0, 0])
         loss = 1 - self.loss_fn(preds, y)
         acc = self.accuracy(preds, y)
         self.log("val/loss", loss, prog_bar=True)
