@@ -5,7 +5,7 @@ Model Roadmap:
 - [X] CNN (LeNet-5)
 - [X] Deep CNN (VGG)
 - [ ] Deep CNN with skipped connections (ResNet-50)
-- [ ] SegNet
+- [X] SegNet
 - [ ] BiSeNet V2
 - [ ] Basic ViT
 - [ ] DETR
