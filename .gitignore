@@ -13,7 +13,7 @@ wheels/
 # Libraries generated files
 lightning_logs/
 wandb/
-MNIST/
+*.ckpt
 
 # File types
 *.ipynb
