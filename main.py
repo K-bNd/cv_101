@@ -7,6 +7,7 @@ import torch.nn as nn
 from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import EarlyStopping, Callback, LearningRateMonitor
 from argparse import ArgumentParser
+from datasets import load_dataset, Dataset, IterableDataset
 
 
 def pick_dataset(dataset: str) -> tuple[L.LightningDataModule, int, int, Literal["classification", "segmentation"]]:
@@ -57,6 +58,24 @@ def pick_model(model: str, in_channels: int, num_classes: int) -> nn.Module:
         case _:
             raise NotImplementedError(
                 "The chosen model is invalid, please choose from the following: lenet, basic_nn, vgg16, segnet, resnet34, resnet50")
+
+
+def main_imagenet(batch_size: int = 128, early_stopping_patience: int = 10):
+
+    train_dataset = load_dataset("ILSVRC/imagenet-1k", streaming=True, split="train").with_format("torch")
+    val_dataset = load_dataset("ILSVRC/imagenet-1k", streaming=True, split="val").with_format("torch")
+    test_dataset = load_dataset("ILSVRC/imagenet-1k", streaming=True, split="test").with_format("torch")
+
+    train_dataloader = utils.data.DataLoader(
+        train_dataset, num_workers=7, batch_size=batch_size
+    )
+    test_dataloader = utils.data.DataLoader(
+        test_dataset, num_workers=7, batch_size=batch_size
+    )
+    val_dataloader = utils.data.DataLoader(
+        val_dataset, num_workers=7, batch_size=batch_size
+    )
+    return
 
 
 if __name__ == "__main__":
