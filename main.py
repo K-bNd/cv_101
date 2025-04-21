@@ -3,7 +3,7 @@ from torch import utils
 from torchvision.datasets import MNIST, Imagenette, CIFAR10, OxfordIIITPet
 from torchvision.transforms import v2
 from task import BasicClassification, BasicSegmentation
-from models import LeNet, BasicNN, VGG16, SegNet
+from models import LeNet, BasicNN, VGG16, SegNet, ResNet34
 import lightning as L
 from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import EarlyStopping, Callback, LearningRateMonitor
@@ -14,8 +14,8 @@ def main_cifar10(batch_size: int = 128, early_stopping_patience: int = 10):
     classifier = BasicClassification(
         num_classes=10, early_stopping_patience=early_stopping_patience
     )
-    vgg16 = VGG16(num_classes=10)
-    classifier.select_model(vgg16)
+    resnet34 = ResNet34(num_classes=10)
+    classifier.select_model(resnet34)
     train_dataset = CIFAR10(
         "./datasets/cifar10",
         train=True,
@@ -271,7 +271,7 @@ if __name__ == "__main__":
     # Trainer arguments
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--early_stopping_patience", type=int, default=5)
-    parser.add_argument("--dataset", type=str, default="oxford")
+    parser.add_argument("--dataset", type=str, default="cifar10")
 
     # Parse the user inputs and defaults (returns a argparse.Namespace)
     args = parser.parse_args()

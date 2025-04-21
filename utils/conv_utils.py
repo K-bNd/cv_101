@@ -18,6 +18,7 @@ def create_conv_block(
             kernel_size=kernel_size,
             stride=stride,
             padding=padding,
+            bias=False,
         ),
         nn.BatchNorm2d(out_channels),
         nn.ReLU(),
@@ -26,6 +27,7 @@ def create_conv_block(
 
 class ResidualBlock(nn.Module):
     """Residual learning block from the ResNet paper"""
+
     def __init__(
         self,
         in_channels: int,
@@ -34,18 +36,46 @@ class ResidualBlock(nn.Module):
         stride: int,
         padding: Union[int, str] = 0,
     ):
-        self.conv = nn.Sequential(
-            *create_conv_block(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding),
-            *create_conv_block(in_channels=out_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding),
+        super(ResidualBlock, self).__init__()
+        self.shortcut = (
+            nn.Sequential(
+                *create_conv_block(
+                    in_channels=in_channels,
+                    out_channels=out_channels,
+                    kernel_size=1,
+                    stride=2,
+                )
+            )
+            if in_channels != out_channels
+            else nn.Identity()
         )
-    
+        self.conv = nn.Sequential(
+            *create_conv_block(
+                in_channels=in_channels,
+                out_channels=out_channels,
+                kernel_size=kernel_size,
+                stride=stride if in_channels == out_channels else 2,
+                padding=padding,
+            ),
+            *create_conv_block(
+                in_channels=out_channels,
+                out_channels=out_channels,
+                kernel_size=kernel_size,
+                stride=stride,
+                padding=padding,
+            ),
+        )
+
     def forward(self, x: torch.Tensor):
         out = self.conv(x)
-        return out + x
+        short = self.shortcut(x)
+        print(f"{out.shape} + {short.shape}")
+        return out + self.shortcut(x)
 
 
 class BottleneckBlock(nn.Module):
     """Residual learning block from the ResNet paper"""
+
     def __init__(
         self,
         in_channels: int,
@@ -54,12 +84,31 @@ class BottleneckBlock(nn.Module):
         stride: int,
         padding: Union[int, str] = 0,
     ):
+        super(BottleneckBlock, self).__init__()
         self.conv = nn.Sequential(
-            *create_conv_block(in_channels=in_channels, out_channels=out_channels, kernel_size=1, stride=stride, padding=padding),
-            *create_conv_block(in_channels=out_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding),
-            *create_conv_block(in_channels=out_channels, out_channels=out_channels, kernel_size=1, stride=stride, padding=padding),
+            *create_conv_block(
+                in_channels=in_channels,
+                out_channels=out_channels,
+                kernel_size=1,
+                stride=stride,
+                padding=0,
+            ),
+            *create_conv_block(
+                in_channels=out_channels,
+                out_channels=out_channels,
+                kernel_size=kernel_size,
+                stride=stride,
+                padding=padding,
+            ),
+            *create_conv_block(
+                in_channels=out_channels,
+                out_channels=out_channels,
+                kernel_size=1,
+                stride=stride,
+                padding=0,
+            ),
         )
-    
+
     def forward(self, x: torch.Tensor):
         out = self.conv(x)
         return out + x

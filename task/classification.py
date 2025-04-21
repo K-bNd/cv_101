@@ -1,4 +1,4 @@
-from torch import optim, nn
+from torch import logit, optim, nn
 from torchmetrics import Accuracy
 import lightning as L
 import torch
