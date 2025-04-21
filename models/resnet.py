@@ -80,7 +80,7 @@ class ResNet34(nn.Module):
         self.classfier = nn.Sequential(
             nn.Flatten(),
             nn.Linear(in_features=512, out_features=1000),
-            nn.Linear(in_features=1000, out_features=num_classes),
+            nn.Identity() if num_classes == 1000 else nn.Linear(in_features=1000, out_features=num_classes),
         )
 
     def forward(self, x: torch.Tensor):
