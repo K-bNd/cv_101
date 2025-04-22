@@ -3,7 +3,7 @@ from torch import utils
 from torchvision.datasets import MNIST, Imagenette, CIFAR10, OxfordIIITPet
 from torchvision.transforms import v2
 
-def get_cifar10(batch_size: int = 128, early_stopping_patience: int = 10):
+def get_cifar10(batch_size: int = 128):
     train_dataset = CIFAR10(
         "./datasets/cifar10",
         train=True,
