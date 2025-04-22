@@ -10,7 +10,7 @@ from argparse import ArgumentParser
 
 
 def train_vgg16(batch_size: int = 128, early_stopping_patience: int = 10):
-    train_dataloader, val_dataloader, test_dataloader = get_cifar10(batch_size, early_stopping_patience)
+    train_dataloader, val_dataloader, test_dataloader = get_cifar10(batch_size)
     classifier = BasicClassification(
         num_classes=10, early_stopping_patience=early_stopping_patience
     )
