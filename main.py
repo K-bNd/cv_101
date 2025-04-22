@@ -1,7 +1,6 @@
 import torch
 from torch import utils
-from torchvision.datasets import MNIST, Imagenette, CIFAR10, OxfordIIITPet
-from torchvision.transforms import v2
+from utils import get_cifar10, get_imagenette, get_mnist, get_oxford
 from task import BasicClassification, BasicSegmentation
 from models import LeNet, BasicNN, VGG16, SegNet
 import lightning as L
@@ -10,54 +9,13 @@ from lightning.pytorch.callbacks import EarlyStopping, Callback, LearningRateMon
 from argparse import ArgumentParser
 
 
-def main_cifar10(batch_size: int = 128, early_stopping_patience: int = 10):
+def train_vgg16(batch_size: int = 128, early_stopping_patience: int = 10):
+    train_dataloader, val_dataloader, test_dataloader = get_cifar10(batch_size, early_stopping_patience)
     classifier = BasicClassification(
         num_classes=10, early_stopping_patience=early_stopping_patience
     )
     vgg16 = VGG16(num_classes=10)
     classifier.select_model(vgg16)
-    train_dataset = CIFAR10(
-        "./datasets/cifar10",
-        train=True,
-        download=True,
-        transform=v2.Compose(
-            [
-                v2.ToImage(),
-                v2.Resize((224, 224)),
-                v2.ToDtype(torch.float32, scale=True),
-                v2.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),  # normalize to ImageNet values
-            ]
-        ),
-    )
-    test_dataset = CIFAR10(
-        "./datasets/cifar10",
-        train=False,
-        download=True,
-        transform=v2.Compose(
-            [
-                v2.ToImage(),
-                v2.Resize((224, 224)),
-                v2.ToDtype(torch.float32, scale=True),
-                v2.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),  # normalize to ImageNet values
-            ]
-        ),
-    )
-    train_dataloader = utils.data.DataLoader(
-        train_dataset, num_workers=7, batch_size=batch_size
-    )
-    test_dataset, val_dataset = utils.data.random_split(
-        test_dataset, [0.8, 0.2], torch.Generator().manual_seed(1)
-    )
-    test_dataloader = utils.data.DataLoader(
-        test_dataset, num_workers=7, batch_size=batch_size
-    )
-    val_dataloader = utils.data.DataLoader(
-        val_dataset, num_workers=7, batch_size=batch_size
-    )
     wandb_logger = WandbLogger(project="CIFAR10")
     wandb_logger.watch(classifier)
     callbacks: list[Callback] = [
