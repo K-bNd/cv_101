@@ -92,15 +92,10 @@ def get_imagenette(batch_size: int = 128, early_stopping_patience: int = 10):
     val_dataloader = utils.data.DataLoader(
         val_dataset, num_workers=7, batch_size=batch_size
     )
-    return
+    return train_dataloader, val_dataloader, test_dataloader
 
 
-def main_mnist(batch_size: int = 512, early_stopping_patience: int = 10):
-    classifier = BasicClassification(num_classes=10)
-    # ffn = BasicNN(in_features=28*28, hidden_features=800, out_features=10)
-    # cnn = BasicCNN(in_channels=1)
-    vgg16 = VGG16(num_classes=10)
-    classifier.select_model(vgg16)
+def get_mnist(batch_size: int = 512, early_stopping_patience: int = 10):
     train_dataset = MNIST(
         "./datasets/mnist",
         train=True,
@@ -121,26 +116,10 @@ def main_mnist(batch_size: int = 512, early_stopping_patience: int = 10):
     )
     test_dataloader = utils.data.DataLoader(test_dataset, num_workers=7, batch_size=64)
     val_dataloader = utils.data.DataLoader(val_dataset, num_workers=7, batch_size=64)
-    wandb_logger = WandbLogger(project="MNIST")
-    wandb_logger.watch(classifier)
-    callbacks: list[Callback] = [
-        EarlyStopping("train/loss", patience=early_stopping_patience),
-        LearningRateMonitor("epoch"),
-    ]
-    trainer = L.Trainer(max_epochs=500, logger=wandb_logger, callbacks=callbacks)
-    trainer.fit(
-        model=classifier,
-        train_dataloaders=train_dataloader,
-        val_dataloaders=val_dataloader,
-    )
-    trainer.test(classifier, dataloaders=test_dataloader)
-    return
+    return train_dataloader, val_dataloader, test_dataloader
 
 
-def main_oxford(batch_size: int = 128, early_stopping_patience: int = 10):
-    segment = BasicSegmentation(num_classes=3)
-    model = SegNet(num_classes=3)
-    segment.select_model(model)
+def get_oxford(batch_size: int = 128, early_stopping_patience: int = 10):
     image_transform = v2.Compose(
         [
             v2.ToImage(),
@@ -189,58 +168,4 @@ def main_oxford(batch_size: int = 128, early_stopping_patience: int = 10):
     val_dataloader = utils.data.DataLoader(
         val_dataset, num_workers=7, batch_size=batch_size
     )
-    wandb_logger = WandbLogger(project="Oxford IIT Pets")
-    wandb_logger.watch(segment)
-    callbacks: list[Callback] = [
-        EarlyStopping("val/loss", patience=early_stopping_patience),
-        LearningRateMonitor("epoch"),
-    ]
-    trainer = L.Trainer(
-        max_epochs=500,
-        logger=wandb_logger,
-        callbacks=callbacks,
-        log_every_n_steps=len(train_dataloader),
-    )
-    trainer.fit(
-        model=segment,
-        train_dataloaders=train_dataloader,
-        val_dataloaders=val_dataloader,
-    )
-    trainer.test(segment, dataloaders=test_dataloader)
-    print(f"Complete accuracy over training run = {segment.accuracy.compute()}")
-
-
-if __name__ == "__main__":
-    parser = ArgumentParser()
-
-    # Trainer arguments
-    parser.add_argument("--batch_size", type=int, default=128)
-    parser.add_argument("--early_stopping_patience", type=int, default=5)
-    parser.add_argument("--dataset", type=str, default="oxford")
-
-    # Parse the user inputs and defaults (returns a argparse.Namespace)
-    args = parser.parse_args()
-
-    match args.dataset:
-        case "cifar10":
-            main_cifar10(
-                batch_size=args.batch_size,
-                early_stopping_patience=args.early_stopping_patience,
-            )
-        case "imagenette":
-            main_imagenette(
-                batch_size=args.batch_size,
-                early_stopping_patience=args.early_stopping_patience,
-            )
-        case "mnist":
-            main_mnist(
-                batch_size=args.batch_size,
-                early_stopping_patience=args.early_stopping_patience,
-            )
-        case "oxford":
-            main_oxford(
-                batch_size=args.batch_size,
-                early_stopping_patience=args.early_stopping_patience,
-            )
-        case _:
-            raise NotImplementedError()
+    return train_dataloader, val_dataloader, test_dataloader
