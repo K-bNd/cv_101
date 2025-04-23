@@ -12,7 +12,7 @@ from argparse import ArgumentParser
 
 def main_cifar10(batch_size: int = 128, early_stopping_patience: int = 10):
     classifier = BasicClassification(
-        num_classes=10, early_stopping_patience=early_stopping_patience
+        num_classes=10, early_stopping_patience=early_stopping_patience, start_learning_rate=1e-1
     )
     resnet34 = ResNet34(num_classes=10)
     classifier.select_model(resnet34)
