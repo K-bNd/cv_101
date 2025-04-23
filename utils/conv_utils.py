@@ -69,7 +69,6 @@ class ResidualBlock(nn.Module):
     def forward(self, x: torch.Tensor):
         out = self.conv(x)
         short = self.shortcut(x)
-        print(f"{out.shape} + {short.shape}")
         return out + self.shortcut(x)
 
 
