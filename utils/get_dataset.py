@@ -3,7 +3,7 @@ from torch import utils
 from torchvision.datasets import MNIST, Imagenette, CIFAR10, OxfordIIITPet
 from torchvision.transforms import v2
 
-def get_cifar10(batch_size: int = 128):
+def get_cifar10(batch_size: int = 128, image_dimensions: tuple[int, int] = (224, 224)):
     train_dataset = CIFAR10(
         "./datasets/cifar10",
         train=True,
@@ -11,7 +11,7 @@ def get_cifar10(batch_size: int = 128):
         transform=v2.Compose(
             [
                 v2.ToImage(),
-                v2.Resize((224, 224)),
+                v2.Resize(image_dimensions),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -26,7 +26,7 @@ def get_cifar10(batch_size: int = 128):
         transform=v2.Compose(
             [
                 v2.ToImage(),
-                v2.Resize((224, 224)),
+                v2.Resize(image_dimensions),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -49,7 +49,7 @@ def get_cifar10(batch_size: int = 128):
     return train_dataloader, val_dataloader, test_dataloader
 
 
-def get_imagenette(batch_size: int = 128, early_stopping_patience: int = 10):
+def get_imagenette(batch_size: int = 128, image_dimensions: tuple[int, int] = (224, 224)):
     train_dataset = Imagenette(
         "./datasets/imagenette",
         split="train",
@@ -57,7 +57,7 @@ def get_imagenette(batch_size: int = 128, early_stopping_patience: int = 10):
         transform=v2.Compose(
             [
                 v2.ToImage(),
-                v2.Resize((224, 224)),
+                v2.Resize(image_dimensions),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -72,7 +72,7 @@ def get_imagenette(batch_size: int = 128, early_stopping_patience: int = 10):
         transform=v2.Compose(
             [
                 v2.ToImage(),
-                v2.Resize((224, 224)),
+                v2.Resize(image_dimensions),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -95,7 +95,7 @@ def get_imagenette(batch_size: int = 128, early_stopping_patience: int = 10):
     return train_dataloader, val_dataloader, test_dataloader
 
 
-def get_mnist(batch_size: int = 512, early_stopping_patience: int = 10):
+def get_mnist(batch_size: int = 512):
     train_dataset = MNIST(
         "./datasets/mnist",
         train=True,
@@ -119,11 +119,11 @@ def get_mnist(batch_size: int = 512, early_stopping_patience: int = 10):
     return train_dataloader, val_dataloader, test_dataloader
 
 
-def get_oxford(batch_size: int = 128, early_stopping_patience: int = 10):
+def get_oxford(batch_size: int = 128, image_dimensions: tuple[int, int] = (224, 224)):
     image_transform = v2.Compose(
         [
             v2.ToImage(),
-            v2.Resize((224, 224)),
+            v2.Resize(image_dimensions),
             v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(
                 mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -134,7 +134,7 @@ def get_oxford(batch_size: int = 128, early_stopping_patience: int = 10):
     target_transform = v2.Compose(
         [
             v2.ToImage(),
-            v2.Resize((224, 224)),
+            v2.Resize(image_dimensions),
             v2.ToDtype(torch.long),
             v2.Lambda(lambda x: torch.squeeze(x) - 1) # indexes start at 1 according to readme, squeese for CE loss
         ]
