@@ -15,11 +15,13 @@ class BasicClassification(L.LightningModule):
         num_classes: int,
         early_stopping_patience: int = 10,
         optimizer: str = "Adam",
+        start_learning_rate: float = 1e-3,
     ):
         super().__init__()
         self.num_classes = num_classes
         self.early_stopping_patience = early_stopping_patience
         self.optimizer = optimizer
+        self.start_learning_rate = start_learning_rate
         self.accuracy = Accuracy(task="multiclass", num_classes=num_classes)
         self.preprocessing = None
         self.loss_fn = nn.CrossEntropyLoss()
@@ -63,7 +65,7 @@ class BasicClassification(L.LightningModule):
         return acc
 
     def configure_optimizers(self):
-        optimizer = getattr(optim, self.optimizer)(self.parameters())
+        optimizer = getattr(optim, self.optimizer)(self.parameters(), lr=self.start_learning_rate)
         return {
             "optimizer": optimizer,
             "lr_scheduler": {

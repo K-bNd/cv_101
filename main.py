@@ -2,7 +2,7 @@ import torch
 from torch import utils
 from utils import get_cifar10, get_imagenette, get_mnist, get_oxford
 from task import BasicClassification, BasicSegmentation
-from models import LeNet, BasicNN, VGG16, SegNet
+from models import LeNet, BasicNN, VGG16, SegNet, ResNet34, ResNet50
 import lightning as L
 from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import EarlyStopping, Callback, LearningRateMonitor
@@ -14,8 +14,8 @@ def main_cifar10(batch_size: int = 128, early_stopping_patience: int = 10):
     classifier = BasicClassification(
         num_classes=10, early_stopping_patience=early_stopping_patience
     )
-    vgg16 = VGG16(num_classes=10)
-    classifier.select_model(vgg16)
+    resnet50 = ResNet50(num_classes=10)
+    classifier.select_model(resnet50)
     wandb_logger = WandbLogger(project="CIFAR10")
     wandb_logger.watch(classifier)
     callbacks: list[Callback] = [

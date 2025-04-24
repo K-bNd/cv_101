@@ -1,4 +1,5 @@
 from .basic_nn import BasicNN
-from .basic_cnn import LeNet
+from .lenet import LeNet
 from .vgg16 import VGG16
-from .basic_seg import SegNet
+from .segnet import SegNet
+from .resnet import ResNet34, ResNet50
