@@ -26,7 +26,7 @@ def create_conv_block(
 
 
 class ResidualBlock(nn.Module):
-    """Residual learning block from the ResNet paper"""
+    """Residual learning block (ResNet-34) from the ResNet paper"""
 
     def __init__(
         self,
@@ -72,7 +72,7 @@ class ResidualBlock(nn.Module):
 
 
 class BottleneckBlock(nn.Module):
-    """Residual learning block from the ResNet paper"""
+    """Residual learning block (ResNet-50/101/152) from the ResNet paper"""
 
     def __init__(
         self,
