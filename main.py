@@ -3,7 +3,7 @@ from torch import utils
 from torchvision.datasets import MNIST, Imagenette, CIFAR10, OxfordIIITPet
 from torchvision.transforms import v2
 from task import BasicClassification, BasicSegmentation
-from models import LeNet, BasicNN, VGG16, SegNet, ResNet34
+from models import LeNet, BasicNN, VGG16, SegNet, ResNet34, ResNet50
 import lightning as L
 from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import EarlyStopping, Callback, LearningRateMonitor
@@ -12,10 +12,10 @@ from argparse import ArgumentParser
 
 def main_cifar10(batch_size: int = 128, early_stopping_patience: int = 10):
     classifier = BasicClassification(
-        num_classes=10, early_stopping_patience=early_stopping_patience, start_learning_rate=1e-1
+        num_classes=10, early_stopping_patience=early_stopping_patience, start_learning_rate=1e-2
     )
-    resnet34 = ResNet34(num_classes=10)
-    classifier.select_model(resnet34)
+    resnet50 = ResNet50(num_classes=10)
+    classifier.select_model(resnet50)
     train_dataset = CIFAR10(
         "./datasets/cifar10",
         train=True,

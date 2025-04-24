@@ -68,7 +68,6 @@ class ResidualBlock(nn.Module):
 
     def forward(self, x: torch.Tensor):
         out = self.conv(x)
-        short = self.shortcut(x)
         return out + self.shortcut(x)
 
 
@@ -84,30 +83,43 @@ class BottleneckBlock(nn.Module):
         padding: Union[int, str] = 0,
     ):
         super(BottleneckBlock, self).__init__()
+        self.shortcut = (
+            nn.Sequential(
+                *create_conv_block(
+                    in_channels=in_channels,
+                    out_channels=out_channels,
+                    kernel_size=1,
+                    stride=2,
+                )
+            )
+            if in_channels != out_channels
+            else nn.Identity()
+        )
         self.conv = nn.Sequential(
             *create_conv_block(
                 in_channels=in_channels,
-                out_channels=out_channels,
+                out_channels=in_channels,
                 kernel_size=1,
-                stride=stride,
+                stride=1,
                 padding=0,
             ),
             *create_conv_block(
-                in_channels=out_channels,
+                in_channels=in_channels,
                 out_channels=out_channels,
                 kernel_size=kernel_size,
-                stride=stride,
+                stride=stride if in_channels == out_channels else 2,
                 padding=padding,
             ),
             *create_conv_block(
                 in_channels=out_channels,
                 out_channels=out_channels,
                 kernel_size=1,
-                stride=stride,
+                stride=1,
                 padding=0,
             ),
         )
 
     def forward(self, x: torch.Tensor):
         out = self.conv(x)
-        return out + x
+        short = self.shortcut(x)
+        return out + short
