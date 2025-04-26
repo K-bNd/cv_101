@@ -9,6 +9,7 @@ Model Roadmap:
 - [ ] BiSeNet V2
 - [ ] Basic ViT
 - [ ] DETR
+- [ ] LaViT
 
 Tasks:
 - [X] Classification
