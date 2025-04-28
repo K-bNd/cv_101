@@ -89,6 +89,9 @@ if __name__ == "__main__":
         EarlyStopping("val/loss", patience=args.early_stopping_patience),
         LearningRateMonitor("epoch"),
     ]
+    # these steps are necessary to get the dataloader info for logging purposes
+    datamodule.prepare_data()
+    datamodule.setup("fit")
     trainer = L.Trainer(
         max_epochs=500,
         logger=wandb_logger,
