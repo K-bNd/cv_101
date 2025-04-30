@@ -161,7 +161,6 @@ class ImageNetDataModule(L.LightningDataModule):
                 self.test_dataset = load_dataset(
                     "imagenet-1k",
                     split='test',
-                    streaming=True,
                     data_dir=self.hparams.data_dir,
                     token=True,
                     trust_remote_code=True  # Sometimes needed depending on dataset version/HF changes
@@ -178,7 +177,7 @@ class ImageNetDataModule(L.LightningDataModule):
                 #     remove_columns=["image"]  # Remove original image column
                 # )
                 # Alternative using set_transform (applies function sample by sample)
-                self.test_dataset.set_transform(lambda x: self._apply_transforms(x, self.train_transform))
+                self.test_dataset.set_transform(lambda x: self._apply_transforms(x, self.val_transform))
 
         except Exception as e:
             print("\n" + "="*40)
