@@ -39,7 +39,16 @@ class ImageNetDataModule(L.LightningDataModule):
         self.save_hyperparameters('data_dir', 'batch_size', 'num_workers',
                                   'shuffle_buffer_size', 'image_size')  # Saves args to self.hparams
         # Define transforms
-        self.transform = v2.Compose([
+        self.train_transform = v2.Compose([
+            v2.ToImage(),
+            v2.Resize((image_size, image_size)),
+            v2.AutoAugment(v2.AutoAugmentPolicy.IMAGENET)
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize(
+                mean=IMAGENET_MEAN, std=IMAGENET_STD
+            ),
+        ])
+        self.val_transform = v2.Compose([
             v2.ToImage(),
             v2.Resize((image_size, image_size)),
             v2.ToDtype(torch.float32, scale=True),
