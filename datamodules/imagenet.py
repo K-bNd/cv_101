@@ -57,11 +57,27 @@ class ImageNetDataModule(L.LightningDataModule):
         # Check if 'image' key exists
         if 'image' not in examples:
             raise KeyError("Expected 'image' key in the dataset examples.")
+        
+        # handling corrupt images in the dataset
+        if not hasattr(self, '_pillow_patched'):
+            original_getexif = PILImage.Image.getexif
+        
+            def safe_getexif(self):
+                try:
+                    return original_getexif(self)
+                except UnicodeDecodeError:
+                    return PILImage.Exif()
+        
+        # Apply the patch
+        PILImage.Image.getexif = safe_getexif
+        self._pillow_patched = True
 
         transformed_images = []
         for img in examples['image']:
             try:
-                transformed_images.append(transform(img))
+                # handle RGBA images for normalization
+                rgb_img = img.convert('RGB')
+                transformed_images.append(transform(rgb_img))
             except Exception as e:
                 print(f"Error processing image: {e}")
                 transformed_images.append(None)
