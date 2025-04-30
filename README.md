@@ -21,8 +21,10 @@ Tasks:
 
 Datasets:
 
-- MNIST
-- CIFAR10
-- CIFAR100
-- Pascal VOC
-- Oxford IIT Pets
+- [X] MNIST
+- [X] CIFAR10
+- [X] Imagenette
+- [X] ImageNet
+- [X] Oxford IIT Pets
+- [ ] CIFAR100
+- [ ] Pascal VOC
