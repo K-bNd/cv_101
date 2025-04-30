@@ -93,7 +93,7 @@ class ImageNetDataModule(L.LightningDataModule):
         try:
             if stage == "fit":
                 # Use streaming=True for IterableDataset behavior
-                train_ds_raw = load_dataset(
+                self.train_dataset = load_dataset(
                     "imagenet-1k",
                     split='train',
                     streaming=True,
@@ -102,6 +102,7 @@ class ImageNetDataModule(L.LightningDataModule):
                     trust_remote_code=True  # Sometimes needed depending on dataset version/HF changes
                 ).with_format('torch')
                 # Important: Shuffle the streaming dataset!
+                """
                 train_ds_raw = train_ds_raw.shuffle(
                     buffer_size=self.hparams.shuffle_buffer_size,
                     seed=42  # for reproducibility if needed
@@ -112,11 +113,12 @@ class ImageNetDataModule(L.LightningDataModule):
                     fn_kwargs={"transform": self.transform},
                     remove_columns=["image"]  # Remove original image column
                 )
+                """
                 # Alternative using set_transform (applies function sample by sample)
-                # self.train_dataset.set_transform(lambda x: self._apply_transforms(x, self.train_transform))
+                self.train_dataset.set_transform(lambda x: self._apply_transforms(x, self.train_transform))
 
                 print("Loading validation dataset...")
-                val_ds_raw = load_dataset(
+                self.val_dataset = load_dataset(
                     "imagenet-1k",
                     split='validation',
                     streaming=True,  # Also stream validation if desired
@@ -125,19 +127,13 @@ class ImageNetDataModule(L.LightningDataModule):
                     trust_remote_code=True
                 ).with_format('torch')
 
-                self.val_dataset = val_ds_raw.map(
-                    self._apply_transforms,
-                    batched=True,
-                    fn_kwargs={"transform": self.transform},
-                    remove_columns=["image"]
-                )
                 # Alternative using set_transform:
-                # self.val_dataset.set_transform(lambda x: self._apply_transforms(x, self.val_transform))
+                self.val_dataset.set_transform(lambda x: self._apply_transforms(x, self.val_transform))
 
             # Add setup for 'test' or 'predict' stages if needed similarly
             if stage == "test":
                 # Use streaming=True for IterableDataset behavior
-                test_ds_raw = load_dataset(
+                self.test_dataset = load_dataset(
                     "imagenet-1k",
                     split='test',
                     streaming=True,
@@ -146,18 +142,18 @@ class ImageNetDataModule(L.LightningDataModule):
                     trust_remote_code=True  # Sometimes needed depending on dataset version/HF changes
                 )
                 # Important: Shuffle the streaming dataset!
-                test_ds_raw = test_ds_raw.shuffle(
-                    buffer_size=self.hparams.shuffle_buffer_size,
-                    seed=42  # for reproducibility if needed
-                )
-                self.test_dataset = test_ds_raw.map(
-                    self._apply_transforms,
-                    batched=True,  # Process multiple examples at once
-                    fn_kwargs={"transform": self.transform},
-                    remove_columns=["image"]  # Remove original image column
-                )
+                # test_ds_raw = test_ds_raw.shuffle(
+                #     buffer_size=self.hparams.shuffle_buffer_size,
+                #     seed=42  # for reproducibility if needed
+                # )
+                # self.test_dataset = test_ds_raw.map(
+                #     self._apply_transforms,
+                #     batched=True,  # Process multiple examples at once
+                #     fn_kwargs={"transform": self.transform},
+                #     remove_columns=["image"]  # Remove original image column
+                # )
                 # Alternative using set_transform (applies function sample by sample)
-                # self.train_dataset.set_transform(lambda x: self._apply_transforms(x, self.train_transform))
+                self.test_dataset.set_transform(lambda x: self._apply_transforms(x, self.train_transform))
 
         except Exception as e:
             print("\n" + "="*40)
