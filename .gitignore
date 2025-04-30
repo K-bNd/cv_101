@@ -9,6 +9,7 @@ wheels/
 
 # Virtual environments
 .venv
+.huggingface
 
 # Libraries generated files
 lightning_logs/
