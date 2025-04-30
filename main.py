@@ -1,12 +1,13 @@
 from typing import Literal
 from task import BasicClassification, BasicSegmentation
 from models import LeNet, BasicNN, VGG16, SegNet, ResNet34, ResNet50
-from datamodules import CIFAR10DataModule, MNISTDataModule, OxfordIITDataModule, ImagenetteDataModule
+from datamodules import CIFAR10DataModule, MNISTDataModule, OxfordIITDataModule, ImagenetteDataModule, ImageNetDataModule
 import lightning as L
 import torch.nn as nn
 from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import EarlyStopping, Callback, LearningRateMonitor
 from argparse import ArgumentParser
+from datasets import load_dataset, Dataset, IterableDataset
 
 
 def pick_dataset(dataset: str) -> tuple[L.LightningDataModule, int, int, Literal["classification", "segmentation"]]:
@@ -34,6 +35,9 @@ def pick_dataset(dataset: str) -> tuple[L.LightningDataModule, int, int, Literal
             datamodule = OxfordIITDataModule(batch_size=args.batch_size)
             task_type = "segmentation"
             num_classes = 3
+        case "imagenet":
+            datamodule = ImageNetDataModule(batch_size=args.batch_size)
+            num_classes = 1000
         case _:
             raise NotImplementedError(
                 "The chosen dataset is invalid, please choose from the following: cifar10, imagenette, mnist, oxford")
@@ -65,7 +69,7 @@ if __name__ == "__main__":
     # Trainer arguments
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--early_stopping_patience", type=int, default=5)
-    parser.add_argument("--dataset", type=str, default="cifar10")
+    parser.add_argument("--dataset", type=str, default="imagenet")
     parser.add_argument("--model", type=str, default="resnet50")
 
     # Parse the user inputs and defaults (returns a argparse.Namespace)
@@ -76,15 +80,15 @@ if __name__ == "__main__":
     task = None
     match task_type:
         case "classification":
-            task = BasicClassification(num_classes=10)
+            task = BasicClassification(num_classes=num_classes)
         case "segmentation":
-            task = BasicSegmentation(num_classes=3)
+            task = BasicSegmentation(num_classes=num_classes)
         case _:
             raise NotImplementedError()
 
     task.select_model(model)
     wandb_logger = WandbLogger(project=args.dataset.capitalize())
-    wandb_logger.watch(task)
+    # wandb_logger.watch(task)
     callbacks: list[Callback] = [
         EarlyStopping("val/loss", patience=args.early_stopping_patience),
         LearningRateMonitor("epoch"),
