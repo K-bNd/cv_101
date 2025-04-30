@@ -100,7 +100,7 @@ if __name__ == "__main__":
         max_epochs=500,
         logger=wandb_logger,
         callbacks=callbacks,
-        log_every_n_steps=len(datamodule.train_dataloader()) if args.dataset != "imagenet" else 50,
+        log_every_n_steps=len(datamodule.train_dataloader()),
     )
     trainer.fit(
         model=task,
