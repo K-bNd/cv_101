@@ -42,7 +42,7 @@ class ImageNetDataModule(L.LightningDataModule):
         self.train_transform = v2.Compose([
             v2.ToImage(),
             v2.Resize((image_size, image_size)),
-            v2.AutoAugment(v2.AutoAugmentPolicy.IMAGENET)
+            v2.AutoAugment(v2.AutoAugmentPolicy.IMAGENET),
             v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(
                 mean=IMAGENET_MEAN, std=IMAGENET_STD
