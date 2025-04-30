@@ -35,7 +35,11 @@ class BasicClassification(L.LightningModule):
         return self.model(x)
 
     def training_step(self, batch, batch_idx):
-        x, y = batch
+        if isinstance(batch, dict):
+            x = batch["x"]
+            y = batch["y"]
+        else:
+            x, y = batch
         x = self.preprocessing(x) if self.preprocessing else x
         logits = self.model(x)
         loss = self.loss_fn(input=logits, target=y)
