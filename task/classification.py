@@ -24,7 +24,9 @@ class BasicClassification(L.LightningModule):
         self.optimizer = optimizer
         self.start_learning_rate = start_learning_rate
         self.weight_decay = weight_decay
+        self.softmax = nn.Softmax(dim=1)
         self.accuracy = Accuracy(task="multiclass", num_classes=num_classes)
+        self.top5 = Accuracy(task="multiclass", num_classes=num_classes, top_k=5)
         self.preprocessing = None
         self.loss_fn = nn.CrossEntropyLoss()
 
@@ -45,9 +47,12 @@ class BasicClassification(L.LightningModule):
         x = self.preprocessing(x) if self.preprocessing else x
         logits = self.model(x)
         loss = self.loss_fn(input=logits, target=y)
-        acc = self.accuracy(logits, y)
+        preds = self.softmax(logits)
+        acc = self.accuracy(preds, y)
+        top5 = self.top5(preds, y)
         self.log("train/loss", loss, prog_bar=True)
         self.log("train/acc", acc, prog_bar=True)
+        self.log("train/top5", top5, prog_bar=True)
         return loss
 
     def test_step(self, batch, batch_idx):
@@ -59,9 +64,12 @@ class BasicClassification(L.LightningModule):
         x = self.preprocessing(x) if self.preprocessing else x
         logits = self.model(x)
         loss = self.loss_fn(input=logits, target=y)
-        acc = self.accuracy(logits, y)
+        preds = self.softmax(logits)
+        acc = self.accuracy(preds, y)
+        top5 = self.top5(preds, y)
         self.log("test/loss", loss, prog_bar=True)
         self.log("test/acc", acc, prog_bar=True)
+        self.log("test/top5", top5, prog_bar=True)
         return acc
 
     def validation_step(self, batch, batch_idx):
@@ -73,9 +81,12 @@ class BasicClassification(L.LightningModule):
         x = self.preprocessing(x) if self.preprocessing else x
         logits = self.model(x)
         loss = self.loss_fn(input=logits, target=y)
-        acc = self.accuracy(logits, y)
+        preds = self.softmax(logits)
+        acc = self.accuracy(preds, y)
+        top5 = self.top5(preds, y)
         self.log("val/loss", loss, prog_bar=True)
         self.log("val/acc", acc, prog_bar=True)
+        self.log("val/top5", top5, prog_bar=True)
         return acc
 
     def configure_optimizers(self):
