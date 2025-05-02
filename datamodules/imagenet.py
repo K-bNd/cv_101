@@ -120,7 +120,6 @@ class ImageNetDataModule(L.LightningDataModule):
                 full_train_dataset = load_dataset(
                     "imagenet-1k",
                     split='train',
-                    streaming=True,
                     data_dir=self.hparams.data_dir,
                     token=True,
                     trust_remote_code=True # ImageNet-1k from ILSVRC requires remote code execution
