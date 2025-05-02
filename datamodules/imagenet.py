@@ -76,11 +76,9 @@ class ImageNetDataModule(L.LightningDataModule):
                     return original_getexif(self)
                 except UnicodeDecodeError:
                     return PILImage.Exif()
-        
-        # Apply the patch
-        PILImage.Image.getexif = safe_getexif
-        self._pillow_patched = True
-
+            PILImage.Image.getexif = safe_getexif
+            # Apply the patch
+            self._pillow_patched = True
         transformed_images = []
         for img in examples['image']:
             try:
