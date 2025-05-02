@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
 from utils import create_conv_block, ResidualBlock, BottleneckBlock
+from huggingface_hub import PyTorchModelHubMixin
 
 
-class ResNet50(nn.Module):
+class ResNet50(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-classification", license="mit", tags=["arxiv:1512.03385"], repo_url="https://github.com/K-bNd/cv_101"):
     def __init__(self, in_channels: int = 3, num_classes=10) -> None:
         super(ResNet50, self).__init__()
         self.num_classes = num_classes

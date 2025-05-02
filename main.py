@@ -71,6 +71,8 @@ if __name__ == "__main__":
     parser.add_argument("--early_stopping_patience", type=int, default=5)
     parser.add_argument("--dataset", type=str, default="imagenet")
     parser.add_argument("--model", type=str, default="resnet50")
+    parser.add_argument("--upload_model", type=bool, default=False)
+    parser.add_argument("--hf_username", type=str, default="kevin-nd")
 
     # Parse the user inputs and defaults (returns a argparse.Namespace)
     args = parser.parse_args()
@@ -107,3 +109,6 @@ if __name__ == "__main__":
         datamodule=datamodule
     )
     trainer.test(task, datamodule=datamodule)
+
+    if args.upload_model:
+        task.model.push_to_hub(f"{args.hf_username}/{args.model}_{args.dataset}")
