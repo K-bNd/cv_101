@@ -32,7 +32,7 @@ class ImageNetDataModule(L.LightningDataModule):
         data_dir: str = "../datasets/imagenet",
         batch_size: int = 32,
         num_workers: int = 4,
-        image_size: int = 224,
+        image_size: int = 256,
         shuffle_buffer_size: int = 10000  # For IterableDataset shuffling
     ):
         super().__init__()
@@ -51,6 +51,15 @@ class ImageNetDataModule(L.LightningDataModule):
         self.val_transform = v2.Compose([
             v2.ToImage(),
             v2.Resize((image_size, image_size)),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize(
+                mean=IMAGENET_MEAN, std=IMAGENET_STD
+            ),
+        ])
+        self.test_transform = v2.Compose([
+            v2.ToImage(),
+            v2.Resize((image_size, image_size)),
+            v2.TenCrop((image_size, image_size)),
             v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(
                 mean=IMAGENET_MEAN, std=IMAGENET_STD
@@ -138,7 +147,7 @@ class ImageNetDataModule(L.LightningDataModule):
                     token=True,
                     trust_remote_code=True  # Sometimes needed depending on dataset version/HF changes
                 )
-                self.test_dataset.set_transform(lambda x: self._apply_transforms(x, self.val_transform))
+                self.test_dataset.set_transform(lambda x: self._apply_transforms(x, self.test_transform))
 
         except Exception as e:
             print("\n" + "="*40)
