@@ -85,82 +85,13 @@ class ResNet50(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-classificati
                 in_features=1000, out_features=num_classes),
         )
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor, encoding_only: bool = False):
         enc = self.encoder(x)
         pool = self.pool(enc)
         logits = self.classfier(pool)
+        if encoding_only:
+            return enc
         return logits
-
-    @staticmethod
-    def get_encoder_layer(in_channels: int = 3) -> nn.Sequential:
-        return nn.Sequential(
-            # region conv1_x
-            *create_conv_block(
-                in_channels=in_channels,
-                out_channels=64,
-                stride=2,
-                kernel_size=7,
-                padding=3,
-            ),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-            # endregion
-            # region conv2_x
-            BottleneckBlock(
-                in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1
-            ),
-            BottleneckBlock(
-                in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1
-            ),
-            BottleneckBlock(
-                in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1
-            ),
-            # endregion
-            # region conv3_x
-            BottleneckBlock(
-                in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1
-            ),
-            BottleneckBlock(
-                in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1
-            ),
-            BottleneckBlock(
-                in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1
-            ),
-            BottleneckBlock(
-                in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1
-            ),
-            # endregion
-            # region conv4_x
-            BottleneckBlock(
-                in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1
-            ),
-            BottleneckBlock(
-                in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1
-            ),
-            BottleneckBlock(
-                in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1
-            ),
-            BottleneckBlock(
-                in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1
-            ),
-            BottleneckBlock(
-                in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1
-            ),
-            BottleneckBlock(
-                in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1
-            ),
-            # endregion
-            # region conv5_x
-            BottleneckBlock(
-                in_channels=256, out_channels=512, kernel_size=3, stride=1, padding=1
-            ),
-            BottleneckBlock(
-                in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1
-            ),
-            BottleneckBlock(
-                in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1
-            ),
-            # endregion
-        )
 
 
 class ResNet34(nn.Module):
@@ -244,79 +175,10 @@ class ResNet34(nn.Module):
                 in_features=1000, out_features=num_classes),
         )
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor, encoding_only: bool = False):
         enc = self.encoder(x)
         pool = self.pool(enc)
         logits = self.classfier(pool)
+        if encoding_only:
+            return enc
         return logits
-
-    @staticmethod
-    def get_encoder_layer(in_channels: int = 3) -> nn.Sequential:
-        return nn.Sequential(
-            # region conv1_x
-            *create_conv_block(
-                in_channels=in_channels,
-                out_channels=64,
-                stride=2,
-                kernel_size=7,
-                padding=3,
-            ),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-            # endregion
-            # region conv2_x
-            ResidualBlock(
-                in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1
-            ),
-            ResidualBlock(
-                in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1
-            ),
-            ResidualBlock(
-                in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1
-            ),
-            # endregion
-            # region conv3_x
-            ResidualBlock(
-                in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1
-            ),
-            ResidualBlock(
-                in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1
-            ),
-            ResidualBlock(
-                in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1
-            ),
-            ResidualBlock(
-                in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1
-            ),
-            # endregion
-            # region conv4_x
-            ResidualBlock(
-                in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1
-            ),
-            ResidualBlock(
-                in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1
-            ),
-            ResidualBlock(
-                in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1
-            ),
-            ResidualBlock(
-                in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1
-            ),
-            ResidualBlock(
-                in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1
-            ),
-            ResidualBlock(
-                in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1
-            ),
-            # endregion
-            # region conv5_x
-            ResidualBlock(
-                in_channels=256, out_channels=512, kernel_size=3, stride=1, padding=1
-            ),
-            ResidualBlock(
-                in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1
-            ),
-            ResidualBlock(
-                in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1
-            ),
-            # endregion
-        )
