@@ -3,7 +3,7 @@ from torchmetrics import Accuracy
 import lightning as L
 import torch
 from typing import Callable, Optional
-
+from huggingface_hub import PyTorchModelHubMixin
 
 class BasicClassification(L.LightningModule):
     """Basic Multiclass Classification framework\n
@@ -32,6 +32,7 @@ class BasicClassification(L.LightningModule):
 
     def select_model(self, model: nn.Module, preprocessing: Optional[Callable] = None):
         self.model = model
+        self.model.train(True)
         self.preprocessing = preprocessing
 
     def forward(self, x):

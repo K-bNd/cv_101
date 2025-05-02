@@ -5,7 +5,7 @@ from datamodules import CIFAR10DataModule, MNISTDataModule, OxfordIITDataModule,
 import lightning as L
 import torch.nn as nn
 from lightning.pytorch.loggers import WandbLogger
-from lightning.pytorch.callbacks import EarlyStopping, Callback, LearningRateMonitor
+from lightning.pytorch.callbacks import EarlyStopping, Callback, LearningRateMonitor, ModelCheckpoint, OnExceptionCheckpoint
 from argparse import ArgumentParser
 from datasets import load_dataset, Dataset, IterableDataset
 
@@ -71,6 +71,8 @@ if __name__ == "__main__":
     parser.add_argument("--early_stopping_patience", type=int, default=5)
     parser.add_argument("--dataset", type=str, default="imagenet")
     parser.add_argument("--model", type=str, default="resnet50")
+    parser.add_argument("--upload_model", type=bool, default=False)
+    parser.add_argument("--hf_username", type=str, default="kevin-nd")
 
     # Parse the user inputs and defaults (returns a argparse.Namespace)
     args = parser.parse_args()
@@ -89,9 +91,16 @@ if __name__ == "__main__":
     task.select_model(model)
     wandb_logger = WandbLogger(project=args.dataset.capitalize())
     # wandb_logger.watch(task)
+    checkpoint_callback = ModelCheckpoint(
+        filename='{epoch}-val_loss{val/loss:.2f}-val_top5{val/top5:.2f}',
+        monitor='val/loss',
+        mode='min',
+        save_top_k=5)
     callbacks: list[Callback] = [
         EarlyStopping("val/loss", patience=args.early_stopping_patience),
         LearningRateMonitor("epoch"),
+        checkpoint_callback,
+        OnExceptionCheckpoint()
     ]
     # these steps are necessary to get the dataloader info for logging purposes
     datamodule.prepare_data()
@@ -107,3 +116,7 @@ if __name__ == "__main__":
         datamodule=datamodule
     )
     trainer.test(task, datamodule=datamodule)
+
+    if args.upload_model:
+        task.model.push_to_hub(
+            f"{args.hf_username}/{args.model}_{args.dataset}")
