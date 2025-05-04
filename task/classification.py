@@ -13,22 +13,24 @@ class BasicClassification(L.LightningModule):
     def __init__(
         self,
         num_classes: int,
-        early_stopping_patience: int = 10,
-        optimizer: str = "Adam",
+        optimizer: str = "SGD",
         start_learning_rate: float = 1e-3,
-        weight_decay: float = 1e-5,
+        optimizer_specific_args: dict = {"weight_decay": 1e-5, "momentum": 0.9},
+        warmup_epochs: int = 5,
+        warmup_decay: float = 0.01,
+        label_smoothing: float = 0.1
     ):
         super().__init__()
         self.num_classes = num_classes
-        self.early_stopping_patience = early_stopping_patience
         self.optimizer = optimizer
         self.start_learning_rate = start_learning_rate
-        self.weight_decay = weight_decay
-        self.softmax = nn.Softmax(dim=1)
+        self.optimizer_specific_args = optimizer_specific_args
+        self.warmup_epochs = warmup_epochs
+        self.warmup_decay = warmup_decay
         self.accuracy = Accuracy(task="multiclass", num_classes=num_classes)
         self.top5 = Accuracy(task="multiclass", num_classes=num_classes, top_k=5)
         self.preprocessing = None
-        self.loss_fn = nn.CrossEntropyLoss()
+        self.loss_fn = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
 
     def select_model(self, model: nn.Module, preprocessing: Optional[Callable] = None):
         self.model = model
@@ -91,13 +93,13 @@ class BasicClassification(L.LightningModule):
         return acc
 
     def configure_optimizers(self):
-        optimizer = getattr(optim, self.optimizer)(self.parameters(), lr=self.start_learning_rate, weight_decay=self.weight_decay)
+        optimizer = getattr(optim, self.optimizer)(self.parameters(), lr=self.start_learning_rate, **self.optimizer_specific_args)
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
-                "scheduler": optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer=optimizer, patience=self.early_stopping_patience // 3
-                ),
-                "monitor": "val/loss",
+                "scheduler": optim.lr_scheduler.SequentialLR(optimizer=optimizer, schedulers=[
+                    optim.lr_scheduler.LinearLR(start_factor=self.warmup_decay),
+                    optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=self.trainer.max_epochs - self.warmup_epochs)
+                ], milestones=[self.warmup_epochs]),
             },
         }
