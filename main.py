@@ -97,7 +97,6 @@ if __name__ == "__main__":
         mode='min',
         save_top_k=5)
     callbacks: list[Callback] = [
-        EarlyStopping("val/loss", patience=args.early_stopping_patience),
         LearningRateMonitor("epoch"),
         checkpoint_callback,
         OnExceptionCheckpoint()
