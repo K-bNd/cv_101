@@ -6,6 +6,7 @@ import huggingface_hub
 from datasets import load_dataset, Image  # Image is useful for type hinting
 from PIL import Image as PILImage  # To handle potential errors
 from torchvision.transforms import v2
+from torch.utils.data import default_collate
 # Define standard ImageNet normalization constants
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
@@ -32,17 +33,22 @@ class ImageNetDataModule(L.LightningDataModule):
         data_dir: str = "../datasets/imagenet",
         batch_size: int = 32,
         num_workers: int = 4,
-        image_size: int = 256,
-        shuffle_buffer_size: int = 10000  # For IterableDataset shuffling
+        image_size: int = 224,
+        test_image_size: int = 256,
     ):
         super().__init__()
-        self.save_hyperparameters('data_dir', 'batch_size', 'num_workers',
-                                  'shuffle_buffer_size', 'image_size')  # Saves args to self.hparams
+        self.save_hyperparameters('data_dir', 'batch_size', 'image_size',
+                                  'test_image_size', 'num_workers')  # Saves args to self.hparams
         # Define transforms
+        self.cutup_mixup = v2.RandomChoice([
+            v2.MixUp(alpha=0.2, num_classes=1000),
+            v2.CutMix(alpha=1.0, num_classes=1000),
+        ])
         self.train_transform = v2.Compose([
             v2.ToImage(),
-            v2.Resize((image_size, image_size)),
-            v2.AutoAugment(v2.AutoAugmentPolicy.IMAGENET),
+            v2.Resize(image_size),
+            v2.TrivialAugmentWide(interpolation=v2.InterpolationMode.BILINEAR),
+            v2.RandomErasing(p=0.1),
             v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(
                 mean=IMAGENET_MEAN, std=IMAGENET_STD
@@ -50,7 +56,7 @@ class ImageNetDataModule(L.LightningDataModule):
         ])
         self.val_transform = v2.Compose([
             v2.ToImage(),
-            v2.Resize((image_size, image_size)),
+            v2.Resize(image_size),
             v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(
                 mean=IMAGENET_MEAN, std=IMAGENET_STD
@@ -58,8 +64,8 @@ class ImageNetDataModule(L.LightningDataModule):
         ])
         self.test_transform = v2.Compose([
             v2.ToImage(),
-            v2.Resize((image_size, image_size)),
-            v2.TenCrop((image_size, image_size)),
+            v2.Resize(test_image_size),
+            v2.TenCrop(image_size),
             v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(
                 mean=IMAGENET_MEAN, std=IMAGENET_STD
@@ -72,14 +78,13 @@ class ImageNetDataModule(L.LightningDataModule):
         Handles the 'image' key provided by the HF dataset.
         Converts images to RGB if they are not already.
         """
-        # Check if 'image' key exists
         if 'image' not in examples:
             raise KeyError("Expected 'image' key in the dataset examples.")
-        
+
         # handling corrupt images in the dataset
         if not hasattr(self, '_pillow_patched'):
             original_getexif = PILImage.Image.getexif
-        
+
             def safe_getexif(self):
                 try:
                     return original_getexif(self)
@@ -111,7 +116,6 @@ class ImageNetDataModule(L.LightningDataModule):
         # Stack only the valid transformed images
         output_batch = {
             'x': torch.stack([transformed_images[i] for i in valid_indices]),
-            # Filter labels corresponding to valid images
             'y': torch.tensor([examples['label'][i] for i in valid_indices], dtype=torch.long)
         }
         return output_batch
@@ -129,25 +133,27 @@ class ImageNetDataModule(L.LightningDataModule):
                     split='train',
                     data_dir=self.hparams.data_dir,
                     token=True,
-                    trust_remote_code=True # ImageNet-1k from ILSVRC requires remote code execution
+                    trust_remote_code=True  # ImageNet-1k from ILSVRC requires remote code execution
                 ).with_format('torch')
 
-                self.train_dataset, self.val_dataset = full_train_dataset.train_test_split(test_size=50000, seed=42).values()
+                self.train_dataset, self.val_dataset = full_train_dataset.train_test_split(
+                    test_size=50000, seed=42).values()
 
-                self.train_dataset.set_transform(lambda x: self._apply_transforms(x, self.train_transform))
-                self.val_dataset.set_transform(lambda x: self._apply_transforms(x, self.val_transform))
+                self.train_dataset.set_transform(
+                    lambda x: self._apply_transforms(x, self.train_transform))
+                self.val_dataset.set_transform(
+                    lambda x: self._apply_transforms(x, self.val_transform))
 
-            # Add setup for 'test' or 'predict' stages if needed similarly
             if stage == "test":
-                # Use streaming=True for IterableDataset behavior
                 self.test_dataset = load_dataset(
                     "imagenet-1k",
                     split='validation',
                     data_dir=self.hparams.data_dir,
                     token=True,
-                    trust_remote_code=True  # Sometimes needed depending on dataset version/HF changes
+                    trust_remote_code=True
                 )
-                self.test_dataset.set_transform(lambda x: self._apply_transforms(x, self.test_transform))
+                self.test_dataset.set_transform(
+                    lambda x: self._apply_transforms(x, self.test_transform))
 
         except Exception as e:
             print("\n" + "="*40)
@@ -167,13 +173,16 @@ class ImageNetDataModule(L.LightningDataModule):
         if self.train_dataset is None:
             raise RuntimeError(
                 "Train dataset not initialized. Run setup() first.")
-        # For IterableDataset, set shuffle=False in DataLoader; shuffling is handled by .shuffle() on the dataset itself.
+
+        def collate_fn(batch):
+            return self.cutup_mixup(*default_collate(batch))
         return DataLoader(
             self.train_dataset,
+            collate_fn=collate_fn,
             batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
-            pin_memory=True,  # Usually good for GPU training
-            persistent_workers=self.hparams.num_workers > 0,  # Avoid worker restart overhead
+            pin_memory=True,
+            persistent_workers=self.hparams.num_workers > 0,
         )
 
     def val_dataloader(self):
@@ -185,7 +194,7 @@ class ImageNetDataModule(L.LightningDataModule):
             persistent_workers=self.hparams.num_workers > 0,
         )
 
-    def test_dataloader(self):  # Implement if you have a test split/stage
+    def test_dataloader(self):
         return DataLoader(
             self.test_dataset,
             batch_size=self.hparams.batch_size,
