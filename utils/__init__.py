@@ -1,2 +1,5 @@
 from .conv_utils import create_conv_block, ResidualBlock, BottleneckBlock
-from .get_dataset import get_cifar10, get_imagenette, get_oxford, get_mnist
+
+# Define standard ImageNet normalization constants
+IMAGENET_MEAN = [0.485, 0.456, 0.406]
+IMAGENET_STD = [0.229, 0.224, 0.225]
