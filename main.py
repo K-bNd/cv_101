@@ -69,6 +69,8 @@ if __name__ == "__main__":
     # Trainer arguments
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--early_stopping_patience", type=int, default=5)
+    parser.add_argument("--start_lr", type=float, default=1e-3)
+    parser.add_argument("--warmup_epochs", type=int, default=5)
     parser.add_argument("--dataset", type=str, default="imagenet")
     parser.add_argument("--model", type=str, default="resnet50")
     parser.add_argument("--upload_model", type=bool, default=False)
@@ -82,7 +84,8 @@ if __name__ == "__main__":
     task = None
     match task_type:
         case "classification":
-            task = BasicClassification(num_classes=num_classes)
+            task = BasicClassification(num_classes=num_classes, start_learning_rate=args.start_lr,
+                                       warmup_epochs=args.warmup_epochs)
         case "segmentation":
             task = BasicSegmentation(num_classes=num_classes)
         case _:
