@@ -43,8 +43,8 @@ class ImageNetDataModule(L.LightningDataModule):
         def get_label(x):
             return x['y']
         self.cutup_mixup = v2.RandomChoice([
-            v2.MixUp(alpha=0.2, num_classes=1000, labels_getter=lambda x: get_label),
-            v2.CutMix(alpha=1.0, num_classes=1000, labels_getter=lambda x: get_label),
+            v2.MixUp(alpha=0.2, num_classes=1000, labels_getter=get_label),
+            v2.CutMix(alpha=1.0, num_classes=1000, labels_getter=get_label),
         ])
         self.train_transform = v2.Compose([
             v2.ToImage(),
