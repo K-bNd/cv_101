@@ -99,7 +99,7 @@ if __name__ == "__main__":
     callbacks: list[Callback] = [
         LearningRateMonitor("epoch"),
         checkpoint_callback,
-        OnExceptionCheckpoint()
+        OnExceptionCheckpoint("./model_ckpt_fail")
     ]
     # these steps are necessary to get the dataloader info for logging purposes
     datamodule.prepare_data()
