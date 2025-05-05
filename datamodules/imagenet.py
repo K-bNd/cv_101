@@ -111,12 +111,12 @@ class ImageNetDataModule(L.LightningDataModule):
             # Return empty tensors if no valid images processed in the batch
             # Adjust dimensions based on your model's expected input
             return {'x': torch.empty((0, 3, self.hparams.image_size, self.hparams.image_size)),
-                    'y': torch.empty(0, dtype=torch.long)}
+                    'labels': torch.empty(0, dtype=torch.long)}
 
         # Stack only the valid transformed images
         output_batch = {
             'x': torch.stack([transformed_images[i] for i in valid_indices]),
-            'y': torch.tensor([examples['label'][i] for i in valid_indices], dtype=torch.long)
+            'labels': torch.tensor([examples['label'][i] for i in valid_indices], dtype=torch.long)
         }
         return output_batch
 
