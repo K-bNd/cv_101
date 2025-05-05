@@ -51,12 +51,7 @@ class BasicClassification(L.LightningModule):
         x = self.preprocessing(x) if self.preprocessing else x
         logits = self.model(x)
         loss = self.loss_fn(input=logits, target=y)
-        preds = self.softmax(logits)
-        acc = self.accuracy(preds, y)
-        top5 = self.top5(preds, y)
         self.log("train/loss", loss, prog_bar=True)
-        self.log("train/top1", acc, prog_bar=True)
-        self.log("train/top5", top5, prog_bar=True)
         return loss
 
     def test_step(self, batch, batch_idx):
