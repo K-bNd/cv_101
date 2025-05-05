@@ -99,7 +99,7 @@ class BasicClassification(L.LightningModule):
             "optimizer": optimizer,
             "lr_scheduler": {
                 "scheduler": optim.lr_scheduler.SequentialLR(optimizer=optimizer, schedulers=[
-                    optim.lr_scheduler.LinearLR(start_factor=self.warmup_decay),
+                    optim.lr_scheduler.LinearLR(optimizer=optimizer,start_factor=self.warmup_decay),
                     optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=self.trainer.max_epochs - self.warmup_epochs)
                 ], milestones=[self.warmup_epochs]),
             },
