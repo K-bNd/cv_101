@@ -41,8 +41,8 @@ class ImageNetDataModule(L.LightningDataModule):
                                   'test_image_size', 'num_workers')  # Saves args to self.hparams
         # Define transforms
         self.cutup_mixup = v2.RandomChoice([
-            v2.MixUp(alpha=0.2, num_classes=1000),
-            v2.CutMix(alpha=1.0, num_classes=1000),
+            v2.MixUp(alpha=0.2, num_classes=1000, labels_getter=lambda x: x['y']),
+            v2.CutMix(alpha=1.0, num_classes=1000, labels_getter=lambda x: x['y']),
         ])
         self.train_transform = v2.Compose([
             v2.ToImage(),
@@ -111,12 +111,12 @@ class ImageNetDataModule(L.LightningDataModule):
             # Return empty tensors if no valid images processed in the batch
             # Adjust dimensions based on your model's expected input
             return {'x': torch.empty((0, 3, self.hparams.image_size, self.hparams.image_size)),
-                    'labels': torch.empty(0, dtype=torch.long)}
+                    'y': torch.empty(0, dtype=torch.long)}
 
         # Stack only the valid transformed images
         output_batch = {
             'x': torch.stack([transformed_images[i] for i in valid_indices]),
-            'labels': torch.tensor([examples['label'][i] for i in valid_indices], dtype=torch.long)
+            'y': torch.tensor([examples['label'][i] for i in valid_indices], dtype=torch.long)
         }
         return output_batch
 

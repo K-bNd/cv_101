@@ -45,7 +45,7 @@ class BasicClassification(L.LightningModule):
     def training_step(self, batch, batch_idx):
         if isinstance(batch, dict):
             x = batch["x"]
-            y = batch["labels"]
+            y = batch["y"]
         else:
             x, y = batch
         x = self.preprocessing(x) if self.preprocessing else x
@@ -62,7 +62,7 @@ class BasicClassification(L.LightningModule):
     def test_step(self, batch, batch_idx):
         if isinstance(batch, dict):
             x = batch["x"]
-            y = batch["labels"]
+            y = batch["y"]
         else:
             x, y = batch
         x = self.preprocessing(x) if self.preprocessing else x
@@ -79,7 +79,7 @@ class BasicClassification(L.LightningModule):
     def validation_step(self, batch, batch_idx):
         if isinstance(batch, dict):
             x = batch["x"]
-            y = batch["labels"]
+            y = batch["y"]
         else:
             x, y = batch
         x = self.preprocessing(x) if self.preprocessing else x
