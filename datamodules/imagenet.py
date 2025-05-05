@@ -46,7 +46,7 @@ class ImageNetDataModule(L.LightningDataModule):
         ])
         self.train_transform = v2.Compose([
             v2.ToImage(),
-            v2.Resize(image_size),
+            v2.Resize((image_size, image_size)),
             v2.TrivialAugmentWide(interpolation=v2.InterpolationMode.BILINEAR),
             v2.RandomErasing(p=0.1),
             v2.ToDtype(torch.float32, scale=True),
@@ -56,7 +56,7 @@ class ImageNetDataModule(L.LightningDataModule):
         ])
         self.val_transform = v2.Compose([
             v2.ToImage(),
-            v2.Resize(image_size),
+            v2.Resize((image_size, image_size)),
             v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(
                 mean=IMAGENET_MEAN, std=IMAGENET_STD
