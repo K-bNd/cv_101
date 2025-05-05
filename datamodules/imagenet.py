@@ -40,9 +40,11 @@ class ImageNetDataModule(L.LightningDataModule):
         self.save_hyperparameters('data_dir', 'batch_size', 'image_size',
                                   'test_image_size', 'num_workers')  # Saves args to self.hparams
         # Define transforms
+        def get_label(x):
+            return x['y']
         self.cutup_mixup = v2.RandomChoice([
-            v2.MixUp(alpha=0.2, num_classes=1000, labels_getter=lambda x: x[1]['y']),
-            v2.CutMix(alpha=1.0, num_classes=1000, labels_getter=lambda x: x[1]['y']),
+            v2.MixUp(alpha=0.2, num_classes=1000, labels_getter=lambda x: get_label),
+            v2.CutMix(alpha=1.0, num_classes=1000, labels_getter=lambda x: get_label),
         ])
         self.train_transform = v2.Compose([
             v2.ToImage(),
@@ -175,7 +177,7 @@ class ImageNetDataModule(L.LightningDataModule):
                 "Train dataset not initialized. Run setup() first.")
 
         def collate_fn(batch):
-            return self.cutup_mixup(*default_collate(batch))
+            return self.cutup_mixup(default_collate(batch))
         return DataLoader(
             self.train_dataset,
             collate_fn=collate_fn,
