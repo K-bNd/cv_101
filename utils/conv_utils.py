@@ -126,5 +126,4 @@ class BottleneckBlock(nn.Module):
 
     def forward(self, x: torch.Tensor):
         out = self.conv(x)
-        short = self.shortcut(x)
-        return out + short
+        return out + self.shortcut(x)

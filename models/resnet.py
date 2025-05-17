@@ -90,11 +90,11 @@ class ResNet50(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-classificati
         pool = self.pool(enc)
         logits = self.classfier(pool)
         if encoding_only:
-            return enc
+            return torch.squeeze(pool)
         return logits
 
 
-class ResNet34(nn.Module):
+class ResNet34(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-classification", license="mit", tags=["arxiv:1512.03385"], repo_url="https://github.com/K-bNd/cv_101"):
     def __init__(self, in_channels: int = 3, num_classes=10) -> None:
         super(ResNet34, self).__init__()
         self.num_classes = num_classes
@@ -166,7 +166,6 @@ class ResNet34(nn.Module):
             ),
             # endregion
         )
-
         self.pool = nn.AdaptiveAvgPool2d((1, 1))
         self.classfier = nn.Sequential(
             nn.Flatten(),
@@ -175,10 +174,11 @@ class ResNet34(nn.Module):
                 in_features=1000, out_features=num_classes),
         )
 
+     
     def forward(self, x: torch.Tensor, encoding_only: bool = False):
         enc = self.encoder(x)
         pool = self.pool(enc)
         logits = self.classfier(pool)
         if encoding_only:
-            return enc
+            return torch.squeeze(pool)
         return logits
