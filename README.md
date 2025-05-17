@@ -1,24 +1,30 @@
-We'll start from scratch.
+# DL in Computer Vision
 
 Model Roadmap:
-- [X] FFN 
+
+- [X] FFN
 - [X] CNN (LeNet-5)
 - [X] Deep CNN (VGG)
-- [ ] Deep CNN with skipped connections (ResNet-50)
+- [X] Deep CNN with skipped connections (ResNet-50)
 - [X] SegNet
 - [ ] BiSeNet V2
 - [ ] Basic ViT
 - [ ] DETR
+- [ ] LaViT
 
 Tasks:
+
 - [X] Classification
 - [X] Semantic Segmentation
 - [ ] Object Detection
 - [ ] Instance Segmentation
 
 Datasets:
-- MNIST
-- CIFAR10
-- CIFAR100
-- Pascal VOC
-- Oxford IIT Pets
+
+- [X] MNIST
+- [X] CIFAR10
+- [X] Imagenette
+- [X] ImageNet
+- [X] Oxford IIT Pets
+- [ ] CIFAR100
+- [ ] Pascal VOC

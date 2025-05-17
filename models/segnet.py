@@ -1,9 +1,10 @@
 import torch.nn as nn
 import torch
 from utils import create_conv_block
+from huggingface_hub import PyTorchModelHubMixin
 
 
-class SegNet(nn.Module):
+class SegNet(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-segmentation", license="mit", tags=["arxiv:1511.00561"], repo_url="https://github.com/K-bNd/cv_101"):
     """SegNet Architecture"""
 
     def __init__(self, in_channels: int = 3, num_classes: int = 10):

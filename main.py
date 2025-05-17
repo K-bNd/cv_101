@@ -1,268 +1,66 @@
-import torch
-from torch import utils
-from torchvision.datasets import MNIST, Imagenette, CIFAR10, OxfordIIITPet
-from torchvision.transforms import v2
+from typing import Literal
 from task import BasicClassification, BasicSegmentation
-from models import LeNet, BasicNN, VGG16, SegNet, ResNet34
+from models import LeNet, BasicNN, VGG16, SegNet, ResNet34, ResNet50
+from datamodules import CIFAR10DataModule, MNISTDataModule, OxfordIITDataModule, ImagenetteDataModule, ImageNetDataModule
 import lightning as L
+import torch.nn as nn
 from lightning.pytorch.loggers import WandbLogger
-from lightning.pytorch.callbacks import EarlyStopping, Callback, LearningRateMonitor
+from lightning.pytorch.callbacks import EarlyStopping, Callback, LearningRateMonitor, ModelCheckpoint, OnExceptionCheckpoint
 from argparse import ArgumentParser
+from datasets import load_dataset, Dataset, IterableDataset
 
 
-def main_cifar10(batch_size: int = 128, early_stopping_patience: int = 10):
-    classifier = BasicClassification(
-        num_classes=10, early_stopping_patience=early_stopping_patience
-    )
-    resnet34 = ResNet34(num_classes=10)
-    classifier.select_model(resnet34)
-    train_dataset = CIFAR10(
-        "./datasets/cifar10",
-        train=True,
-        download=True,
-        transform=v2.Compose(
-            [
-                v2.ToImage(),
-                v2.Resize((224, 224)),
-                v2.ToDtype(torch.float32, scale=True),
-                v2.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),  # normalize to ImageNet values
-            ]
-        ),
-    )
-    test_dataset = CIFAR10(
-        "./datasets/cifar10",
-        train=False,
-        download=True,
-        transform=v2.Compose(
-            [
-                v2.ToImage(),
-                v2.Resize((224, 224)),
-                v2.ToDtype(torch.float32, scale=True),
-                v2.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),  # normalize to ImageNet values
-            ]
-        ),
-    )
-    train_dataloader = utils.data.DataLoader(
-        train_dataset, num_workers=7, batch_size=batch_size
-    )
-    test_dataset, val_dataset = utils.data.random_split(
-        test_dataset, [0.8, 0.2], torch.Generator().manual_seed(1)
-    )
-    test_dataloader = utils.data.DataLoader(
-        test_dataset, num_workers=7, batch_size=batch_size
-    )
-    val_dataloader = utils.data.DataLoader(
-        val_dataset, num_workers=7, batch_size=batch_size
-    )
-    wandb_logger = WandbLogger(project="CIFAR10")
-    wandb_logger.watch(classifier)
-    callbacks: list[Callback] = [
-        EarlyStopping("val/loss", patience=early_stopping_patience),
-        LearningRateMonitor("epoch"),
-    ]
-    trainer = L.Trainer(
-        max_epochs=500,
-        logger=wandb_logger,
-        callbacks=callbacks,
-        log_every_n_steps=len(train_dataloader),
-    )
-    trainer.fit(
-        model=classifier,
-        train_dataloaders=train_dataloader,
-        val_dataloaders=val_dataloader,
-    )
-    trainer.test(classifier, dataloaders=test_dataloader)
-    print(f"Complete accuracy over training run = {classifier.accuracy.compute()}")
-    return
+def pick_dataset(dataset: str) -> tuple[L.LightningDataModule, int, int, Literal["classification", "segmentation"]]:
+    """Init datamodule based on the dataset name
+        Args:
+            dataset (str): The name of the dataset
+        Returns:
+            datamodule (L.LightningDataModule): The datamodule
+            in_channels (int): The number of input channels
+            num_classes (int): The number of classes
+            task_type (Literal["classification", "segmentation"]): The type of task
+    """
+    task_type = "classification"
+    num_classes = 10
+    in_channels = 3
+    match dataset:
+        case "cifar10":
+            datamodule = CIFAR10DataModule(batch_size=args.batch_size)
+        case "imagenette":
+            datamodule = ImagenetteDataModule(batch_size=args.batch_size)
+        case "mnist":
+            datamodule = MNISTDataModule(batch_size=args.batch_size)
+            in_channels = 1
+        case "oxford":
+            datamodule = OxfordIITDataModule(batch_size=args.batch_size)
+            task_type = "segmentation"
+            num_classes = 3
+        case "imagenet":
+            datamodule = ImageNetDataModule(batch_size=args.batch_size)
+            num_classes = 1000
+        case _:
+            raise NotImplementedError(
+                "The chosen dataset is invalid, please choose from the following: cifar10, imagenette, mnist, oxford")
+
+    return datamodule, in_channels, num_classes, task_type
 
 
-def main_imagenette(batch_size: int = 128, early_stopping_patience: int = 10):
-    classifier = BasicClassification(
-        num_classes=10, early_stopping_patience=early_stopping_patience
-    )
-    vgg16 = VGG16(num_classes=10)
-    classifier.select_model(vgg16)
-    train_dataset = Imagenette(
-        "./datasets/imagenette",
-        split="train",
-        download=True,
-        transform=v2.Compose(
-            [
-                v2.ToImage(),
-                v2.Resize((224, 224)),
-                v2.ToDtype(torch.float32, scale=True),
-                v2.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),  # normalize to ImageNet values
-            ]
-        ),
-    )
-    test_dataset = Imagenette(
-        "./datasets/imagenette",
-        split="val",
-        download=True,
-        transform=v2.Compose(
-            [
-                v2.ToImage(),
-                v2.Resize((224, 224)),
-                v2.ToDtype(torch.float32, scale=True),
-                v2.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),  # normalize to ImageNet values
-            ]
-        ),
-    )
-    train_dataloader = utils.data.DataLoader(
-        train_dataset, num_workers=7, batch_size=batch_size
-    )
-    test_dataset, val_dataset = utils.data.random_split(
-        test_dataset, [0.8, 0.2], torch.Generator().manual_seed(1)
-    )
-    test_dataloader = utils.data.DataLoader(
-        test_dataset, num_workers=7, batch_size=batch_size
-    )
-    val_dataloader = utils.data.DataLoader(
-        val_dataset, num_workers=7, batch_size=batch_size
-    )
-    wandb_logger = WandbLogger(project="Imagenette")
-    wandb_logger.watch(classifier)
-    callbacks: list[Callback] = [
-        EarlyStopping("train/loss", patience=early_stopping_patience),
-        LearningRateMonitor("epoch"),
-    ]
-    trainer = L.Trainer(
-        max_epochs=500,
-        logger=wandb_logger,
-        callbacks=callbacks,
-        log_every_n_steps=len(train_dataloader),
-    )
-    trainer.fit(
-        model=classifier,
-        train_dataloaders=train_dataloader,
-        val_dataloaders=val_dataloader,
-    )
-    trainer.test(classifier, dataloaders=test_dataloader)
-    print(f"Complete accuracy over training run = {classifier.accuracy.compute()}")
-    return
-
-
-def main_mnist(batch_size: int = 512, early_stopping_patience: int = 10):
-    classifier = BasicClassification(num_classes=10)
-    # ffn = BasicNN(in_features=28*28, hidden_features=800, out_features=10)
-    # cnn = BasicCNN(in_channels=1)
-    vgg16 = VGG16(num_classes=10)
-    classifier.select_model(vgg16)
-    train_dataset = MNIST(
-        "./datasets/mnist",
-        train=True,
-        download=True,
-        transform=v2.Compose([v2.ToImage(), v2.ToDtype(torch.float32, scale=True)]),
-    )
-    test_dataset = MNIST(
-        "./datasets/mnist",
-        train=False,
-        download=True,
-        transform=v2.Compose([v2.ToImage(), v2.ToDtype(torch.float32, scale=True)]),
-    )
-    train_dataloader = utils.data.DataLoader(
-        train_dataset, num_workers=7, batch_size=batch_size
-    )
-    test_dataset, val_dataset = utils.data.random_split(
-        test_dataset, [0.8, 0.2], torch.Generator().manual_seed(1)
-    )
-    test_dataloader = utils.data.DataLoader(test_dataset, num_workers=7, batch_size=64)
-    val_dataloader = utils.data.DataLoader(val_dataset, num_workers=7, batch_size=64)
-    wandb_logger = WandbLogger(project="MNIST")
-    wandb_logger.watch(classifier)
-    callbacks: list[Callback] = [
-        EarlyStopping("train/loss", patience=early_stopping_patience),
-        LearningRateMonitor("epoch"),
-    ]
-    trainer = L.Trainer(max_epochs=500, logger=wandb_logger, callbacks=callbacks)
-    trainer.fit(
-        model=classifier,
-        train_dataloaders=train_dataloader,
-        val_dataloaders=val_dataloader,
-    )
-    trainer.test(classifier, dataloaders=test_dataloader)
-    return
-
-
-def main_oxford(batch_size: int = 128, early_stopping_patience: int = 10):
-    segment = BasicSegmentation(num_classes=3)
-    model = SegNet(num_classes=3)
-    segment.select_model(model)
-    image_transform = v2.Compose(
-        [
-            v2.ToImage(),
-            v2.Resize((224, 224)),
-            v2.ToDtype(torch.float32, scale=True),
-            v2.Normalize(
-                mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-            ),  # normalize to ImageNet values
-        ]
-    )
-
-    target_transform = v2.Compose(
-        [
-            v2.ToImage(),
-            v2.Resize((224, 224)),
-            v2.ToDtype(torch.long),
-            v2.Lambda(lambda x: torch.squeeze(x) - 1) # indexes start at 1 according to readme, squeese for CE loss
-        ]
-    )
-    trainval_dataset = OxfordIIITPet(
-        "./datasets/oxford-iit-pets",
-        split="trainval",
-        target_types="segmentation",
-        download=True,
-        transform=image_transform,
-        target_transform=target_transform
-    )
-    test_dataset = OxfordIIITPet(
-        "./datasets/oxford-iit-pets",
-        split="test",
-        target_types="segmentation",        
-        download=True,
-        transform=image_transform,
-        target_transform=target_transform
-    )
-
-    train_dataset, val_dataset = utils.data.random_split(
-        trainval_dataset, [0.8, 0.2], torch.Generator().manual_seed(42)
-    )
-    test_dataloader = utils.data.DataLoader(
-        test_dataset, num_workers=7, batch_size=batch_size
-    )
-    train_dataloader = utils.data.DataLoader(
-        train_dataset, num_workers=7, batch_size=batch_size
-    )
-    val_dataloader = utils.data.DataLoader(
-        val_dataset, num_workers=7, batch_size=batch_size
-    )
-    wandb_logger = WandbLogger(project="Oxford IIT Pets")
-    wandb_logger.watch(segment)
-    callbacks: list[Callback] = [
-        EarlyStopping("val/loss", patience=early_stopping_patience),
-        LearningRateMonitor("epoch"),
-    ]
-    trainer = L.Trainer(
-        max_epochs=500,
-        logger=wandb_logger,
-        callbacks=callbacks,
-        log_every_n_steps=len(train_dataloader),
-    )
-    trainer.fit(
-        model=segment,
-        train_dataloaders=train_dataloader,
-        val_dataloaders=val_dataloader,
-    )
-    trainer.test(segment, dataloaders=test_dataloader)
-    print(f"Complete accuracy over training run = {segment.accuracy.compute()}")
+def pick_model(model: str, in_channels: int, num_classes: int) -> nn.Module:
+    """Init model based on the model name"""
+    match model:
+        case "lenet":
+            return LeNet(in_channels, num_classes)
+        case "vgg16":
+            return VGG16(num_classes=num_classes)
+        case "segnet":
+            return SegNet(in_channels, num_classes)
+        case "resnet34":
+            return ResNet34(in_channels, num_classes)
+        case "resnet50":
+            return ResNet50(in_channels, num_classes)
+        case _:
+            raise NotImplementedError(
+                "The chosen model is invalid, please choose from the following: lenet, basic_nn, vgg16, segnet, resnet34, resnet50")
 
 
 if __name__ == "__main__":
@@ -271,31 +69,54 @@ if __name__ == "__main__":
     # Trainer arguments
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--early_stopping_patience", type=int, default=5)
-    parser.add_argument("--dataset", type=str, default="cifar10")
+    parser.add_argument("--dataset", type=str, default="imagenet")
+    parser.add_argument("--model", type=str, default="resnet50")
+    parser.add_argument("--upload_model", type=bool, default=False)
+    parser.add_argument("--hf_username", type=str, default="kevin-nd")
 
     # Parse the user inputs and defaults (returns a argparse.Namespace)
     args = parser.parse_args()
-
-    match args.dataset:
-        case "cifar10":
-            main_cifar10(
-                batch_size=args.batch_size,
-                early_stopping_patience=args.early_stopping_patience,
-            )
-        case "imagenette":
-            main_imagenette(
-                batch_size=args.batch_size,
-                early_stopping_patience=args.early_stopping_patience,
-            )
-        case "mnist":
-            main_mnist(
-                batch_size=args.batch_size,
-                early_stopping_patience=args.early_stopping_patience,
-            )
-        case "oxford":
-            main_oxford(
-                batch_size=args.batch_size,
-                early_stopping_patience=args.early_stopping_patience,
-            )
+    datamodule, in_channels, num_classes, task_type = pick_dataset(
+        args.dataset)
+    model = pick_model(args.model, in_channels, num_classes)
+    task = None
+    match task_type:
+        case "classification":
+            task = BasicClassification(num_classes=num_classes)
+        case "segmentation":
+            task = BasicSegmentation(num_classes=num_classes)
         case _:
             raise NotImplementedError()
+
+    task.select_model(model)
+    wandb_logger = WandbLogger(project=args.dataset.capitalize())
+    # wandb_logger.watch(task)
+    checkpoint_callback = ModelCheckpoint(
+        filename='{epoch}-val_loss{val/loss:.2f}-val_top5{val/top5:.2f}',
+        monitor='val/loss',
+        mode='min',
+        save_top_k=5)
+    callbacks: list[Callback] = [
+        EarlyStopping("val/loss", patience=args.early_stopping_patience),
+        LearningRateMonitor("epoch"),
+        checkpoint_callback,
+        OnExceptionCheckpoint()
+    ]
+    # these steps are necessary to get the dataloader info for logging purposes
+    datamodule.prepare_data()
+    datamodule.setup("fit")
+    trainer = L.Trainer(
+        max_epochs=500,
+        logger=wandb_logger,
+        callbacks=callbacks,
+        log_every_n_steps=len(datamodule.train_dataloader()),
+    )
+    trainer.fit(
+        model=task,
+        datamodule=datamodule
+    )
+    trainer.test(task, datamodule=datamodule)
+
+    if args.upload_model:
+        task.model.push_to_hub(
+            f"{args.hf_username}/{args.model}_{args.dataset}")
