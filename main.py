@@ -7,7 +7,6 @@ import torch.nn as nn
 from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import EarlyStopping, Callback, LearningRateMonitor, ModelCheckpoint, OnExceptionCheckpoint
 from argparse import ArgumentParser
-from datasets import load_dataset, Dataset, IterableDataset
 
 
 def pick_dataset(dataset: str) -> tuple[L.LightningDataModule, int, int, Literal["classification", "segmentation"]]:
@@ -100,7 +99,7 @@ if __name__ == "__main__":
         EarlyStopping("val/loss", patience=args.early_stopping_patience),
         LearningRateMonitor("epoch"),
         checkpoint_callback,
-        OnExceptionCheckpoint()
+        OnExceptionCheckpoint(dirpath="./exception_model_checkpoint")
     ]
     # these steps are necessary to get the dataloader info for logging purposes
     datamodule.prepare_data()
