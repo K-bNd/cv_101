@@ -32,8 +32,6 @@ def pick_dataset(
         config (TrainConfig): config info
     Returns:
         datamodule (L.LightningDataModule): The datamodule
-        in_channels (int): The number of input channels
-        num_classes (int): The number of classes
         task_type (Literal["classification", "segmentation"]): The type of task
     """
     task_type = "classification"
