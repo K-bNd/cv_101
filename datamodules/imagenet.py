@@ -144,7 +144,7 @@ class ImageNetDataModule(L.LightningDataModule):
             token=True,
             streaming=False,
             trust_remote_code=True,  # Sometimes needed depending on dataset version/HF changes
-        ).with_format('torch')
+        ).with_format("torch")
 
     def setup(self, stage: str | None = None):
         """
@@ -202,8 +202,7 @@ class ImageNetDataModule(L.LightningDataModule):
             batch_size=self.config.batch_size,
             num_workers=self.config.num_workers,
             pin_memory=True,  # Usually good for GPU training
-            persistent_workers=self.config.num_workers
-            > 0,  # Avoid worker restart overhead
+            persistent_workers=self.config.num_workers > 0,
         )
 
     def val_dataloader(self):
