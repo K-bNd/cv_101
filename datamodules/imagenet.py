@@ -6,6 +6,8 @@ import huggingface_hub
 from datasets import load_dataset, Image  # Image is useful for type hinting
 from PIL import Image as PILImage  # To handle potential errors
 from torchvision.transforms import v2
+
+from configs.config_models import ImageNetTrainConfig
 # Define standard ImageNet normalization constants
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
@@ -29,20 +31,18 @@ class ImageNetDataModule(L.LightningDataModule):
 
     def __init__(
         self,
+        config: ImageNetTrainConfig,
         data_dir: str = "../datasets/imagenet",
-        batch_size: int = 32,
-        num_workers: int = 4,
-        image_size: int = 256,
-        shuffle_buffer_size: int = 10000  # For IterableDataset shuffling
     ):
         super().__init__()
-        self.save_hyperparameters('data_dir', 'batch_size', 'num_workers',
-                                  'shuffle_buffer_size', 'image_size')  # Saves args to self.hparams
+        self.save_hyperparameters('data_dir')  # Saves args to self.hparams
         # Define transforms
+        self.config = config
         self.train_transform = v2.Compose([
             v2.ToImage(),
-            v2.Resize((image_size, image_size)),
-            v2.AutoAugment(v2.AutoAugmentPolicy.IMAGENET),
+            v2.Resize((config.train_res, config.train_res)),
+            v2.AutoAugment(v2.AutoAugmentPolicy.IMAGENET) if config.auto_augment else v2.Identity(),
+            v2.RandAugment() if config.rand_augment else v2.Identity(),
             v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(
                 mean=IMAGENET_MEAN, std=IMAGENET_STD
@@ -50,7 +50,7 @@ class ImageNetDataModule(L.LightningDataModule):
         ])
         self.val_transform = v2.Compose([
             v2.ToImage(),
-            v2.Resize((image_size, image_size)),
+            v2.Resize((config.val_res, config.val_res)),
             v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(
                 mean=IMAGENET_MEAN, std=IMAGENET_STD
@@ -58,8 +58,8 @@ class ImageNetDataModule(L.LightningDataModule):
         ])
         self.test_transform = v2.Compose([
             v2.ToImage(),
-            v2.Resize((image_size, image_size)),
-            v2.TenCrop((image_size, image_size)),
+            v2.Resize((config.val_res, config.val_res)),
+            v2.TenCrop((config.val_res, config.val_res)),
             v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(
                 mean=IMAGENET_MEAN, std=IMAGENET_STD
@@ -105,7 +105,7 @@ class ImageNetDataModule(L.LightningDataModule):
         if not valid_indices:
             # Return empty tensors if no valid images processed in the batch
             # Adjust dimensions based on your model's expected input
-            return {'x': torch.empty((0, 3, self.hparams.image_size, self.hparams.image_size)),
+            return {'x': torch.empty((0, 3, self.config.train_res, self.config.train_res)),
                     'y': torch.empty(0, dtype=torch.long)}
 
         # Stack only the valid transformed images
@@ -170,26 +170,26 @@ class ImageNetDataModule(L.LightningDataModule):
         # For IterableDataset, set shuffle=False in DataLoader; shuffling is handled by .shuffle() on the dataset itself.
         return DataLoader(
             self.train_dataset,
-            batch_size=self.hparams.batch_size,
-            num_workers=self.hparams.num_workers,
+            batch_size=self.config.batch_size,
+            num_workers=self.config.num_workers,
             pin_memory=True,  # Usually good for GPU training
-            persistent_workers=self.hparams.num_workers > 0,  # Avoid worker restart overhead
+            persistent_workers=self.config.num_workers > 0,  # Avoid worker restart overhead
         )
 
     def val_dataloader(self):
         return DataLoader(
             self.val_dataset,
-            batch_size=self.hparams.batch_size,
-            num_workers=self.hparams.num_workers,
+            batch_size=self.config.batch_size,
+            num_workers=self.config.num_workers,
             pin_memory=True,
-            persistent_workers=self.hparams.num_workers > 0,
+            persistent_workers=self.config.num_workers > 0,
         )
 
     def test_dataloader(self):  # Implement if you have a test split/stage
         return DataLoader(
             self.test_dataset,
-            batch_size=self.hparams.batch_size,
-            num_workers=self.hparams.num_workers,
+            batch_size=self.config.batch_size,
+            num_workers=self.config.num_workers,
             pin_memory=True,
-            persistent_workers=self.hparams.num_workers > 0,
+            persistent_workers=self.config.num_workers > 0,
         )

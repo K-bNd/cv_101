@@ -5,6 +5,8 @@ import torch
 from typing import Callable, Literal, Optional
 from torchmetrics.segmentation import MeanIoU, GeneralizedDiceScore
 
+from configs.config_models import TrainConfig
+
 
 class BasicSegmentation(L.LightningModule):
     """Basic Semantic Semantic Segmentation framework\n
@@ -20,22 +22,19 @@ class BasicSegmentation(L.LightningModule):
 
     def __init__(
         self,
-        num_classes: int = 3,
-        optimizer: str = "Adam",
+        config: TrainConfig,
         input_format: Literal["one-hot", "index"] = "index",
-        early_stopping_patience: int = 10,
     ):
         super().__init__()
-        self.num_classes = num_classes
-        self.optimizer = optimizer
         self.postprocessing = None
-        self.accuracy = MeanIoU(num_classes=num_classes, input_format=input_format)
+        self.config = config
+        self.accuracy = MeanIoU(
+            num_classes=config.num_classes, input_format=input_format
+        )
         self.loss_fn = nn.CrossEntropyLoss()
         self.loss_fn_2 = GeneralizedDiceScore(
-            num_classes=num_classes, input_format=input_format
+            num_classes=config.num_classes, input_format=input_format
         )
-        self.early_stopping_patience = early_stopping_patience
-        
 
     def select_model(self, model: nn.Module, postprocessing: Optional[Callable] = None):
         self.model = model
@@ -77,13 +76,26 @@ class BasicSegmentation(L.LightningModule):
         return acc
 
     def configure_optimizers(self):
-        optimizer = getattr(optim, self.optimizer)(self.parameters())
+        optimizer = getattr(optim, self.config.optimizer)(
+            self.parameters(), lr=self.config.start_lr, **self.config.optimizer_params
+        )
+        match self.config.lr_scheduler:
+            case "plateau":
+                scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+                    optimizer=optimizer, **self.config.lr_scheduler_params
+                )
+            case "cosine":
+                scheduler = optim.lr_scheduler.CosineAnnealingLR(
+                    optimizer, **self.config.lr_scheduler_params
+                )
+            case "step":
+                scheduler = optim.lr_scheduler.StepLR(
+                    optimizer, **self.config.lr_scheduler_params
+                )
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
-                "scheduler": optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer=optimizer, patience=self.early_stopping_patience // 3
-                ),
+                "scheduler": scheduler,
                 "monitor": "val/loss",
             },
         }
