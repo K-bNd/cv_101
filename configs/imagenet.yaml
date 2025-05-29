@@ -1,0 +1,15 @@
+image_size: 224
+num_classes: 1000
+in_channels: 3
+batch_size: 512
+start_lr: 0.1
+epochs: 300
+early_stopping: False
+early_stopping_patience: 5
+num_workers: 4
+optimizer: "SGD"
+momentum: 0
+weight_decay: 0
+lr_scheduler: 'cosine'
+train_res: 224
+val_res: 224

@@ -4,21 +4,25 @@ import torch
 from torchvision.datasets import CIFAR10
 from torchvision.transforms import v2
 
+from configs.config_models import TrainConfig
+
 
 class CIFAR10DataModule(L.LightningDataModule):
-    def __init__(self, data_dir: str = "../datasets/cifar10", batch_size: int = 32, image_size: int = 32):
+    def __init__(self, config: TrainConfig, data_dir: str = "../datasets/cifar10"):
         super().__init__()
         self.data_dir = data_dir
+        self.config = config
         self.transform = v2.Compose(
             [
                 v2.ToImage(),
-                v2.Resize(image_size),
+                v2.Resize(config.image_size),
+                v2.AutoAugment(v2.AutoAugmentPolicy.CIFAR10) if config.auto_augment else v2.Identity(),
+                v2.RandAugment() if config.rand_augment else v2.Identity(),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
             ])
-        self.batch_size = batch_size
 
     def prepare_data(self):
         # download
@@ -30,27 +34,38 @@ class CIFAR10DataModule(L.LightningDataModule):
         if stage == "fit":
             cifar10_full = CIFAR10(
                 self.data_dir, train=True, download=False, transform=self.transform)
-            self.cifar10_train, self.cifar10_val = random_split(
+            self.train_dataset, self.val_dataset = random_split(
                 cifar10_full, [0.9, 0.1], generator=torch.Generator().manual_seed(42)
             )
 
         # Assign test dataset for use in dataloader(s)
         if stage == "test":
-            self.cifar10_test = CIFAR10(
-                self.data_dir, train=False, download=False, transform=self.transform)
-
-        if stage == "predict":
-            self.cifar10_predict = CIFAR10(
+            self.test_dataset = CIFAR10(
                 self.data_dir, train=False, download=False, transform=self.transform)
 
     def train_dataloader(self):
-        return DataLoader(self.cifar10_train, batch_size=self.batch_size)
+        return DataLoader(
+            self.train_dataset,
+            batch_size=self.config.batch_size,
+            num_workers=self.config.num_workers,
+            pin_memory=True,  # Usually good for GPU training
+            persistent_workers=self.config.num_workers > 0,  # Avoid worker restart overhead
+        )
 
     def val_dataloader(self):
-        return DataLoader(self.cifar10_val, batch_size=self.batch_size)
+        return DataLoader(
+            self.val_dataset,
+            batch_size=self.config.batch_size,
+            num_workers=self.config.num_workers,
+            pin_memory=True,
+            persistent_workers=self.config.num_workers > 0,
+        )
 
     def test_dataloader(self):
-        return DataLoader(self.cifar10_test, batch_size=self.batch_size)
-
-    def predict_dataloader(self):
-        return DataLoader(self.cifar10_predict, batch_size=self.batch_size)
+        return DataLoader(
+            self.test_dataset,
+            batch_size=self.config.batch_size,
+            num_workers=self.config.num_workers,
+            pin_memory=True,
+            persistent_workers=self.config.num_workers > 0,
+        )
