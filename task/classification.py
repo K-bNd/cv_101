@@ -92,7 +92,7 @@ class BasicClassification(L.LightningModule):
                     optimizer=optimizer, **self.config.lr_scheduler_params
                 )
             case "cosine":
-                scheduler = optim.lr_scheduler.CosineAnnealingLR(
+                scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
                     optimizer, **self.config.lr_scheduler_params
                 )
             case "step":
