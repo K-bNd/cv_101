@@ -2,7 +2,7 @@ import lightning as L
 from torch.utils.data import random_split, DataLoader
 import torch
 from torchvision.datasets import CIFAR10
-from torchvision.transforms import v2
+from torchvision.transforms import v2, InterpolationMode
 
 from configs.config_models import TrainConfig
 
@@ -16,8 +16,8 @@ class CIFAR10DataModule(L.LightningDataModule):
             [
                 v2.ToImage(),
                 v2.Resize(config.image_size),
-                v2.AutoAugment(v2.AutoAugmentPolicy.CIFAR10) if config.auto_augment else v2.Identity(),
-                v2.RandAugment() if config.rand_augment else v2.Identity(),
+                v2.AutoAugment(v2.AutoAugmentPolicy.CIFAR10, interpolation=InterpolationMode.BILINEAR) if config.auto_augment else v2.Identity(),
+                v2.RandAugment(interpolation=InterpolationMode.BILINEAR) if config.rand_augment else v2.Identity(),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
