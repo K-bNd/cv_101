@@ -8,6 +8,7 @@ def create_conv_block(
     out_channels: int,
     kernel_size: int,
     stride: int,
+    groups: int = 1,
     padding: Union[int, str] = 0,
 ) -> list[nn.Module]:
     """Building block for Deep CNNs based on BatchNorm paper"""
@@ -19,6 +20,7 @@ def create_conv_block(
             stride=stride,
             padding=padding,
             bias=False,
+            groups=groups,
         ),
         nn.BatchNorm2d(out_channels),
         nn.ReLU(),
@@ -123,6 +125,103 @@ class BottleneckBlock(nn.Module):
                 padding=0,
             ),
         )
+
+    def forward(self, x: torch.Tensor):
+        out = self.conv(x)
+        return out + self.shortcut(x)
+
+
+class GatherExpansion(nn.Module):
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        stride: int,
+        expansion_size: int = 6,
+    ):
+        """Gather-and-Expansion Layer from the BiSeNet V2 paper"""
+        super(GatherExpansion, self).__init__()
+        self.shortcut = (
+            nn.Sequential(
+                *create_conv_block(
+                    in_channels=in_channels,
+                    out_channels=out_channels,
+                    kernel_size=3,
+                    stride=2,
+                    padding=1,
+                ),
+                *create_conv_block(
+                    in_channels=out_channels,
+                    out_channels=out_channels,
+                    kernel_size=1,
+                    stride=1,
+                    padding=0,
+                ),
+            )
+            if in_channels != out_channels
+            else nn.Identity()
+        )
+        self.conv = nn.Identity()
+        if in_channels == out_channels:
+            # GE block from Fig.5 (b)
+            self.conv = nn.Sequential(
+                *create_conv_block(
+                    in_channels=in_channels,
+                    out_channels=out_channels,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                ),
+                *create_conv_block(
+                    in_channels=out_channels,
+                    out_channels=expansion_size * out_channels,
+                    kernel_size=3,
+                    groups=out_channels,
+                    stride=1,
+                    padding=1,
+                ),
+                *create_conv_block(
+                    in_channels=expansion_size * out_channels,
+                    out_channels=out_channels,
+                    kernel_size=1,
+                    stride=1,
+                    padding=0,
+                ),
+            )
+        else:
+            # GE block from Fig.5 (c)
+            self.conv = nn.Sequential(
+                *create_conv_block(
+                    in_channels=in_channels,
+                    out_channels=in_channels,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                ),
+                *create_conv_block(
+                    in_channels=in_channels,
+                    out_channels=expansion_size * in_channels,
+                    kernel_size=3,
+                    groups=in_channels,
+                    stride=stride,
+                    padding=1,
+                ),
+                *create_conv_block(
+                    in_channels=expansion_size * in_channels,
+                    out_channels=expansion_size * in_channels,
+                    kernel_size=3,
+                    groups=in_channels,
+                    stride=1,
+                    padding=1,
+                ),
+                *create_conv_block(
+                    in_channels=expansion_size * in_channels,
+                    out_channels=out_channels,
+                    kernel_size=1,
+                    stride=1,
+                    padding=0,
+                ),
+            )
 
     def forward(self, x: torch.Tensor):
         out = self.conv(x)
