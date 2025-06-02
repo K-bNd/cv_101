@@ -188,6 +188,33 @@ class StemBlock(nn.Module):
         return self.conv_3(x3)
 
 
+class ContextEmbeddingBlock(nn.Module):
+    def __init__(self, in_channels: int):
+        self.pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.conv_1 = nn.Sequential(
+            *create_conv_block(
+                in_channels=in_channels,
+                out_channels=in_channels,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+            )
+        )
+        self.conv_2 = nn.Sequential(
+            *create_conv_block(
+                in_channels=in_channels,
+                out_channels=in_channels,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+            )
+        )
+    def forward(self, x: torch.Tensor):
+        x1 = self.pool(x)
+        x2 = self.conv_1(x1)
+        return self.conv_2(x1 + x2)
+
+
 class GatherExpansion(nn.Module):
     def __init__(
         self,
