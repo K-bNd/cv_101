@@ -49,4 +49,5 @@ class BiSeNetV2(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-classificat
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         detail_output = self.detail_branch(x)
-        return self.dense(conv_output)
+        semantic_output = self.semantic_branch(x)
+        return detail_output + semantic_output

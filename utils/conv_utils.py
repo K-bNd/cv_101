@@ -27,6 +27,9 @@ def create_conv_block(
     ]
 
 
+# region ResNet
+
+
 class ResidualBlock(nn.Module):
     """Residual learning block (ResNet-34) from the ResNet paper"""
 
@@ -131,6 +134,60 @@ class BottleneckBlock(nn.Module):
         return out + self.shortcut(x)
 
 
+# endregion
+
+# region BiSeNetV2
+
+
+class StemBlock(nn.Module):
+    def __init__(self, out_channels):
+        """Stem block from BiSeNetV2 paper"""
+        super(StemBlock, self).__init__()
+        self.conv_1 = nn.Sequential(
+            *create_conv_block(
+                in_channels=3,
+                out_channels=out_channels,
+                kernel_size=3,
+                stride=2,
+                padding=1,
+            ),
+        )
+        self.pool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.conv_2 = nn.Sequential(
+            *create_conv_block(
+                in_channels=out_channels,
+                out_channels=out_channels,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+            ),
+            *create_conv_block(
+                in_channels=out_channels,
+                out_channels=out_channels,
+                kernel_size=3,
+                stride=2,
+                padding=1,
+            ),
+        )
+        self.conv_3 = nn.Sequential(
+            *create_conv_block(
+                in_channels=out_channels * 2,
+                out_channels=out_channels,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+            ),
+        )
+
+    def forward(self, image: torch.Tensor):
+        x = self.conv_1(image)
+        x1 = self.pool(x)
+        x2 = self.conv_2(x)
+        print(x1.shape, x2.shape)
+        x3 = torch.concat([x1, x2], dim=1)
+        return self.conv_3(x3)
+
+
 class GatherExpansion(nn.Module):
     def __init__(
         self,
@@ -226,3 +283,6 @@ class GatherExpansion(nn.Module):
     def forward(self, x: torch.Tensor):
         out = self.conv(x)
         return out + self.shortcut(x)
+
+
+# endregion
