@@ -183,13 +183,13 @@ class StemBlock(nn.Module):
         x = self.conv_1(image)
         x1 = self.pool(x)
         x2 = self.conv_2(x)
-        print(x1.shape, x2.shape)
         x3 = torch.concat([x1, x2], dim=1)
         return self.conv_3(x3)
 
 
 class ContextEmbeddingBlock(nn.Module):
     def __init__(self, in_channels: int):
+        super(ContextEmbeddingBlock, self).__init__()
         self.pool = nn.AdaptiveAvgPool2d((1, 1))
         self.conv_1 = nn.Sequential(
             *create_conv_block(
@@ -212,10 +212,11 @@ class ContextEmbeddingBlock(nn.Module):
     def forward(self, x: torch.Tensor):
         x1 = self.pool(x)
         x2 = self.conv_1(x1)
-        return self.conv_2(x1 + x2)
+        x3 = self.conv_2(x + x2)
+        return x3
 
 
-class GatherExpansion(nn.Module):
+class GatherExpansionBlock(nn.Module):
     def __init__(
         self,
         in_channels: int,
@@ -224,7 +225,7 @@ class GatherExpansion(nn.Module):
         expansion_size: int = 6,
     ):
         """Gather-and-Expansion Layer from the BiSeNet V2 paper"""
-        super(GatherExpansion, self).__init__()
+        super(GatherExpansionBlock, self).__init__()
         self.shortcut = (
             nn.Sequential(
                 *create_conv_block(

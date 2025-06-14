@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
-from utils import create_conv_block, GatherExpansion
+from utils import create_conv_block, GatherExpansionBlock, StemBlock
 from huggingface_hub import PyTorchModelHubMixin
+
+from utils.conv_utils import ContextEmbeddingBlock
 
 class BiSeNetV2(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-classification", license="mit", tags=["arxiv:2004.02147"], repo_url="https://github.com/K-bNd/cv_101"):
     """BiSeNetV2 architecture"""
@@ -34,17 +36,19 @@ class BiSeNetV2(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-classificat
             ),
         )
         self.semantic_branch = nn.Sequential(
+            StemBlock(out_channels=16),
             # S-3
-            GatherExpansion(in_channels=3, out_channels=32, stride=2),
-            GatherExpansion(in_channels=32, out_channels=32, stride=1),
+            GatherExpansionBlock(in_channels=3, out_channels=32, stride=2, expansion_size=6),
+            GatherExpansionBlock(in_channels=32, out_channels=32, stride=1, expansion_size=6),
             # S-4
-            GatherExpansion(in_channels=32, out_channels=64, stride=2),
-            GatherExpansion(in_channels=64, out_channels=64, stride=1),
+            GatherExpansionBlock(in_channels=32, out_channels=64, stride=2, expansion_size=6),
+            GatherExpansionBlock(in_channels=64, out_channels=64, stride=1, expansion_size=6),
             # S-5
-            GatherExpansion(in_channels=64, out_channels=128, stride=2),
-            GatherExpansion(in_channels=128, out_channels=128, stride=1),
-            GatherExpansion(in_channels=128, out_channels=128, stride=1),
-            GatherExpansion(in_channels=128, out_channels=128, stride=1),
+            GatherExpansionBlock(in_channels=64, out_channels=128, stride=2, expansion_size=6),
+            GatherExpansionBlock(in_channels=128, out_channels=128, stride=1, expansion_size=6),
+            GatherExpansionBlock(in_channels=128, out_channels=128, stride=1, expansion_size=6),
+            GatherExpansionBlock(in_channels=128, out_channels=128, stride=1, expansion_size=6),
+            ContextEmbeddingBlock(in_channels=128)
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
