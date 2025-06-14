@@ -12,6 +12,7 @@ def create_conv_block(
     groups: int = 1,
     padding: Union[int, str] = 0,
     relu: bool = True,
+    batch_norm: bool = True,
 ) -> list[nn.Module]:
     """Building block for Deep CNNs based on BatchNorm paper"""
     return [
@@ -24,7 +25,7 @@ def create_conv_block(
             bias=False,
             groups=groups,
         ),
-        nn.BatchNorm2d(out_channels),
+        nn.BatchNorm2d(out_channels) if batch_norm else nn.Identity(),
         nn.ReLU() if relu else nn.Identity(),
     ]
 
@@ -155,6 +156,7 @@ class BilateralGuidedAggregation(nn.Module):
                 stride=1,
                 padding=1,
                 groups=in_channels,
+                relu=False,
             ),
             *create_conv_block(
                 in_channels=in_channels,
@@ -162,6 +164,8 @@ class BilateralGuidedAggregation(nn.Module):
                 kernel_size=1,
                 stride=1,
                 padding=0,
+                relu=False,
+                batch_norm=False,
             ),
         )
         self.conv_2 = nn.Sequential(
@@ -171,6 +175,7 @@ class BilateralGuidedAggregation(nn.Module):
                 kernel_size=3,
                 stride=2,
                 padding=1,
+                relu=False,
             ),
             self.pool_1,
         )
@@ -181,12 +186,42 @@ class BilateralGuidedAggregation(nn.Module):
                 kernel_size=3,
                 stride=1,
                 padding=1,
+                relu=False,
             ),
             nn.Upsample(scale_factor=4, align_corners=True),
             nn.Sigmoid(),
         )
+        self.conv_4 = nn.Sequential(
+            *create_conv_block(
+                in_channels=in_channels,
+                out_channels=in_channels,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                groups=in_channels,
+                relu=False,
+            ),
+            *create_conv_block(
+                in_channels=in_channels,
+                out_channels=in_channels,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                relu=False,
+                batch_norm=False,
+            ),
+            nn.Sigmoid(),
+        )
 
-    # def forward(self, detail_branch_x: torch.Tensor, semantic_branch_x: torch.Tensor):
+    def forward(self, detail_branch_x: torch.Tensor, semantic_branch_x: torch.Tensor):
+        x1 = self.conv_1(detail_branch_x)
+        x2 = self.conv_2(detail_branch_x)
+        x3 = self.conv_3(semantic_branch_x)
+        x4 = self.conv_4(semantic_branch_x)
+        x5 = x1 * x3  # 𝐻 × 𝑊 × 𝐶)
+        x6 = x2 * x4  # 𝐻 / 4 × 𝑊 / 4 × 𝐶
+
+        return x5 + nn.Upsample(scale_factor=4, align_corners=True)(x6)
 
 
 class StemBlock(nn.Module):
