@@ -1,5 +1,6 @@
 from typing import Union
 import torch
+import torch.functional as F
 import torch.nn as nn
 
 
@@ -10,6 +11,7 @@ def create_conv_block(
     stride: int,
     groups: int = 1,
     padding: Union[int, str] = 0,
+    relu: bool = True
 ) -> list[nn.Module]:
     """Building block for Deep CNNs based on BatchNorm paper"""
     return [
@@ -23,7 +25,11 @@ def create_conv_block(
             groups=groups,
         ),
         nn.BatchNorm2d(out_channels),
-        nn.ReLU(),
+        nn.ReLU() if relu else nn.Identity()
+    ]
+
+def create_upsample_block() -> list[nn.Module]:
+    return [
     ]
 
 
@@ -138,6 +144,29 @@ class BottleneckBlock(nn.Module):
 
 # region BiSeNetV2
 
+class BilateralGuidedAggregation(nn.Module):
+    def __init__(self, in_channels: int = 3):
+        """Bilateral Guided Aggregation from the BiSeNetV2 paper"""
+        super(BilateralGuidedAggregation, self).__init__()
+        self.pool_1 = nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
+        # going left to right on the Fig.6 from the paper
+        self.conv_1 = nn.Sequential(
+            *create_conv_block(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=1, padding=1, groups=in_channels),
+            *create_conv_block(in_channels=in_channels, out_channels=in_channels, kernel_size=1, stride=1, padding=0),
+        )
+        self.conv_2 = nn.Sequential(
+            *create_conv_block(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=2, padding=1),
+            self.pool_1
+        )
+        self.conv_3 = nn.Sequential(
+            *create_conv_block(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=1, padding=1),
+            nn.Upsample(scale_factor=4, align_corners=True),
+            nn.Sigmoid(),
+        )
+
+    # def forward(self, detail_branch_x: torch.Tensor, semantic_branch_x: torch.Tensor):
+
+
 
 class StemBlock(nn.Module):
     def __init__(self, out_channels):
@@ -234,6 +263,7 @@ class GatherExpansionBlock(nn.Module):
                     kernel_size=3,
                     stride=2,
                     padding=1,
+                    relu=False
                 ),
                 *create_conv_block(
                     in_channels=out_channels,
@@ -241,6 +271,7 @@ class GatherExpansionBlock(nn.Module):
                     kernel_size=1,
                     stride=1,
                     padding=0,
+                    relu=False
                 ),
             )
             if in_channels != out_channels
@@ -264,6 +295,7 @@ class GatherExpansionBlock(nn.Module):
                     groups=out_channels,
                     stride=1,
                     padding=1,
+                    relu=False
                 ),
                 *create_conv_block(
                     in_channels=expansion_size * out_channels,
@@ -271,6 +303,7 @@ class GatherExpansionBlock(nn.Module):
                     kernel_size=1,
                     stride=1,
                     padding=0,
+                    relu=False
                 ),
             )
         else:
@@ -290,6 +323,7 @@ class GatherExpansionBlock(nn.Module):
                     groups=in_channels,
                     stride=stride,
                     padding=1,
+                    relu=False
                 ),
                 *create_conv_block(
                     in_channels=expansion_size * in_channels,
@@ -298,6 +332,7 @@ class GatherExpansionBlock(nn.Module):
                     groups=in_channels,
                     stride=1,
                     padding=1,
+                    relu=False
                 ),
                 *create_conv_block(
                     in_channels=expansion_size * in_channels,
@@ -305,12 +340,13 @@ class GatherExpansionBlock(nn.Module):
                     kernel_size=1,
                     stride=1,
                     padding=0,
+                    relu=False
                 ),
             )
 
     def forward(self, x: torch.Tensor):
         out = self.conv(x)
-        return out + self.shortcut(x)
+        return nn.ReLU()(out + self.shortcut(x))
 
 
 # endregion
