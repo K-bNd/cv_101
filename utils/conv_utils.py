@@ -11,7 +11,7 @@ def create_conv_block(
     stride: int,
     groups: int = 1,
     padding: Union[int, str] = 0,
-    relu: bool = True
+    relu: bool = True,
 ) -> list[nn.Module]:
     """Building block for Deep CNNs based on BatchNorm paper"""
     return [
@@ -25,11 +25,7 @@ def create_conv_block(
             groups=groups,
         ),
         nn.BatchNorm2d(out_channels),
-        nn.ReLU() if relu else nn.Identity()
-    ]
-
-def create_upsample_block() -> list[nn.Module]:
-    return [
+        nn.ReLU() if relu else nn.Identity(),
     ]
 
 
@@ -144,6 +140,7 @@ class BottleneckBlock(nn.Module):
 
 # region BiSeNetV2
 
+
 class BilateralGuidedAggregation(nn.Module):
     def __init__(self, in_channels: int = 3):
         """Bilateral Guided Aggregation from the BiSeNetV2 paper"""
@@ -151,21 +148,45 @@ class BilateralGuidedAggregation(nn.Module):
         self.pool_1 = nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
         # going left to right on the Fig.6 from the paper
         self.conv_1 = nn.Sequential(
-            *create_conv_block(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=1, padding=1, groups=in_channels),
-            *create_conv_block(in_channels=in_channels, out_channels=in_channels, kernel_size=1, stride=1, padding=0),
+            *create_conv_block(
+                in_channels=in_channels,
+                out_channels=in_channels,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                groups=in_channels,
+            ),
+            *create_conv_block(
+                in_channels=in_channels,
+                out_channels=in_channels,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+            ),
         )
         self.conv_2 = nn.Sequential(
-            *create_conv_block(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=2, padding=1),
-            self.pool_1
+            *create_conv_block(
+                in_channels=in_channels,
+                out_channels=in_channels,
+                kernel_size=3,
+                stride=2,
+                padding=1,
+            ),
+            self.pool_1,
         )
         self.conv_3 = nn.Sequential(
-            *create_conv_block(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=1, padding=1),
+            *create_conv_block(
+                in_channels=in_channels,
+                out_channels=in_channels,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+            ),
             nn.Upsample(scale_factor=4, align_corners=True),
             nn.Sigmoid(),
         )
 
     # def forward(self, detail_branch_x: torch.Tensor, semantic_branch_x: torch.Tensor):
-
 
 
 class StemBlock(nn.Module):
@@ -220,6 +241,7 @@ class ContextEmbeddingBlock(nn.Module):
     def __init__(self, in_channels: int):
         super(ContextEmbeddingBlock, self).__init__()
         self.pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.bn = nn.BatchNorm2d(in_channels)
         self.conv_1 = nn.Sequential(
             *create_conv_block(
                 in_channels=in_channels,
@@ -238,8 +260,9 @@ class ContextEmbeddingBlock(nn.Module):
                 padding=1,
             )
         )
+
     def forward(self, x: torch.Tensor):
-        x1 = self.pool(x)
+        x1 = self.bn(self.pool(x))
         x2 = self.conv_1(x1)
         x3 = self.conv_2(x + x2)
         return x3
@@ -263,7 +286,7 @@ class GatherExpansionBlock(nn.Module):
                     kernel_size=3,
                     stride=2,
                     padding=1,
-                    relu=False
+                    relu=False,
                 ),
                 *create_conv_block(
                     in_channels=out_channels,
@@ -271,7 +294,7 @@ class GatherExpansionBlock(nn.Module):
                     kernel_size=1,
                     stride=1,
                     padding=0,
-                    relu=False
+                    relu=False,
                 ),
             )
             if in_channels != out_channels
@@ -295,7 +318,7 @@ class GatherExpansionBlock(nn.Module):
                     groups=out_channels,
                     stride=1,
                     padding=1,
-                    relu=False
+                    relu=False,
                 ),
                 *create_conv_block(
                     in_channels=expansion_size * out_channels,
@@ -303,7 +326,7 @@ class GatherExpansionBlock(nn.Module):
                     kernel_size=1,
                     stride=1,
                     padding=0,
-                    relu=False
+                    relu=False,
                 ),
             )
         else:
@@ -323,7 +346,7 @@ class GatherExpansionBlock(nn.Module):
                     groups=in_channels,
                     stride=stride,
                     padding=1,
-                    relu=False
+                    relu=False,
                 ),
                 *create_conv_block(
                     in_channels=expansion_size * in_channels,
@@ -332,7 +355,7 @@ class GatherExpansionBlock(nn.Module):
                     groups=in_channels,
                     stride=1,
                     padding=1,
-                    relu=False
+                    relu=False,
                 ),
                 *create_conv_block(
                     in_channels=expansion_size * in_channels,
@@ -340,7 +363,7 @@ class GatherExpansionBlock(nn.Module):
                     kernel_size=1,
                     stride=1,
                     padding=0,
-                    relu=False
+                    relu=False,
                 ),
             )
 
