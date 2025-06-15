@@ -141,6 +141,20 @@ class BottleneckBlock(nn.Module):
 
 # region BiSeNetV2
 
+class SegmentationHead(nn.Module):
+    def __init__(self, in_channels: int, scale_factor: int, hidden_channels: int = 128, num_classes: int = 3):
+        super(SegmentationHead, self).__init__()
+        self.scale_factor = scale_factor
+        self.upsample = nn.Upsample(self.scale_factor, mode='bilinear', align_corners=True)
+        self.conv = nn.Sequential(
+            *create_conv_block(in_channels, hidden_channels, kernel_size=3, stride=1, padding=1),
+            *create_conv_block(hidden_channels, num_classes, kernel_size=1, stride=1, padding=0, batch_norm=False, relu=False)
+        )
+    
+    def forward(self, x: torch.Tensor):
+        x1 = self.conv(x)
+        return self.upsample(x1)
+
 
 class BilateralGuidedAggregation(nn.Module):
     def __init__(self, in_channels: int = 3):
@@ -188,7 +202,7 @@ class BilateralGuidedAggregation(nn.Module):
                 padding=1,
                 relu=False,
             ),
-            nn.Upsample(scale_factor=4, align_corners=True),
+            nn.Upsample(scale_factor=4, align_corners=True, mode='bilinear'),
             nn.Sigmoid(),
         )
         self.conv_4 = nn.Sequential(
@@ -221,7 +235,7 @@ class BilateralGuidedAggregation(nn.Module):
         x5 = x1 * x3  # 𝐻 × 𝑊 × 𝐶)
         x6 = x2 * x4  # 𝐻 / 4 × 𝑊 / 4 × 𝐶
 
-        return x5 + nn.Upsample(scale_factor=4, align_corners=True)(x6)
+        return x5 + nn.Upsample(scale_factor=4, align_corners=True, mode='bilinear')(x6)
 
 
 class StemBlock(nn.Module):
