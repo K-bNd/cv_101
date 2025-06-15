@@ -144,8 +144,7 @@ class BottleneckBlock(nn.Module):
 class SegmentationHead(nn.Module):
     def __init__(self, in_channels: int, scale_factor: int, hidden_channels: int = 128, num_classes: int = 3):
         super(SegmentationHead, self).__init__()
-        self.scale_factor = scale_factor
-        self.upsample = nn.Upsample(self.scale_factor, mode='bilinear', align_corners=True)
+        self.upsample = nn.Upsample(scale_factor=scale_factor, mode='bilinear', align_corners=True)
         self.conv = nn.Sequential(
             *create_conv_block(in_channels, hidden_channels, kernel_size=3, stride=1, padding=1),
             *create_conv_block(hidden_channels, num_classes, kernel_size=1, stride=1, padding=0, batch_norm=False, relu=False)
@@ -157,7 +156,7 @@ class SegmentationHead(nn.Module):
 
 
 class BilateralGuidedAggregation(nn.Module):
-    def __init__(self, in_channels: int = 3):
+    def __init__(self, in_channels: int = 128):
         """Bilateral Guided Aggregation from the BiSeNetV2 paper"""
         super(BilateralGuidedAggregation, self).__init__()
         self.pool_1 = nn.AvgPool2d(kernel_size=3, stride=2, padding=1)
@@ -228,11 +227,15 @@ class BilateralGuidedAggregation(nn.Module):
         )
 
     def forward(self, detail_branch_x: torch.Tensor, semantic_branch_x: torch.Tensor):
+        """
+        Detail branch shape: H/8 x W/8 x C
+        Semantic branch shape: H/32 x W/32 x C
+        """
         x1 = self.conv_1(detail_branch_x)
         x2 = self.conv_2(detail_branch_x)
         x3 = self.conv_3(semantic_branch_x)
         x4 = self.conv_4(semantic_branch_x)
-        x5 = x1 * x3  # 𝐻 × 𝑊 × 𝐶)
+        x5 = x1 * x3  # 𝐻 × 𝑊 × 𝐶
         x6 = x2 * x4  # 𝐻 / 4 × 𝑊 / 4 × 𝐶
 
         return x5 + nn.Upsample(scale_factor=4, align_corners=True, mode='bilinear')(x6)
