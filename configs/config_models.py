@@ -22,3 +22,6 @@ class TrainConfig(BaseModel):
 class ImageNetTrainConfig(TrainConfig):
     train_res: int = 224
     val_res: int = 224
+
+class BiSeNetV2TrainConfig(TrainConfig):
+    seg_heads_loss_weight: float = 0.4

@@ -1,11 +1,10 @@
 from torch import optim, nn
-from torchmetrics import Accuracy
 import lightning as L
 import torch
 from typing import Callable, Literal, Optional
 from torchmetrics.segmentation import MeanIoU, GeneralizedDiceScore
 
-from configs.config_models import TrainConfig
+from configs.config_models import TrainConfig, BiSeNetV2TrainConfig
 
 
 class BasicSegmentation(L.LightningModule):
@@ -40,15 +39,14 @@ class BasicSegmentation(L.LightningModule):
         self.model = model
         self.postprocessing = postprocessing
 
-    def forward(self, x):
-        logits = self.model(x)
+    def forward(self, x, inference=True):
+        logits = self.model(x, inference)
         preds = self.postprocessing(logits) if self.postprocessing else logits
         return preds
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        logits = self.model(x)
-        preds = self.postprocessing(logits) if self.postprocessing else logits
+        preds = self(x, inference=False)
         loss = self.loss_fn(preds, y)
         acc = self.accuracy(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
         self.log("train/loss", loss, prog_bar=True)
@@ -57,8 +55,7 @@ class BasicSegmentation(L.LightningModule):
 
     def test_step(self, batch, batch_idx):
         x, y = batch
-        logits = self.model(x)
-        preds = self.postprocessing(logits) if self.postprocessing else logits
+        preds = self(x, inference=False)
         loss = self.loss_fn(preds, y)
         acc = self.accuracy(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
         self.log("test/loss", loss, prog_bar=True)
@@ -67,13 +64,15 @@ class BasicSegmentation(L.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        logits = self.model(x)
-        preds = self.postprocessing(logits) if self.postprocessing else logits
+        preds = self(x, inference=False)
         loss = self.loss_fn(preds, y)
         acc = self.accuracy(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
         self.log("val/loss", loss, prog_bar=True)
         self.log("val/acc", acc, prog_bar=True)
         return acc
+
+    def predict_step(self, batch):
+        return self(batch)
 
     def configure_optimizers(self):
         optimizer = getattr(optim, self.config.optimizer)(
@@ -99,3 +98,60 @@ class BasicSegmentation(L.LightningModule):
                 "monitor": "val/loss",
             },
         }
+
+
+class BiSeNetV2Segmentation(BasicSegmentation):
+    def __init__(
+        self,
+        config: BiSeNetV2TrainConfig,
+        input_format: Literal["one-hot", "index"] = "index",
+    ):
+        super(BiSeNetV2Segmentation, self).__init__(config, input_format)
+        self.config = config
+
+    def forward(self, x, inference=True):
+        logits, seg_heads = self.model(x, inference)
+        preds = self.postprocessing(logits) if self.postprocessing else logits
+        return preds, seg_heads
+
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        preds, seg_heads = self(x, inference=False)
+        loss = self.loss_fn(preds, y)
+        aux_loss = 0.0
+        for seg_head in seg_heads:
+            seg_head_preds = self.postprocessing(seg_head) if self.postprocessing else seg_head
+            aux_loss += self.loss_fn(seg_head_preds, y)
+        loss += self.config.seg_heads_loss_weight * aux_loss
+        acc = self.accuracy(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
+        self.log("train/loss", loss, prog_bar=True)
+        self.log("train/acc", acc, prog_bar=True)
+        return loss
+
+    def test_step(self, batch, batch_idx):
+        x, y = batch
+        preds, seg_heads = self(x, inference=False)
+        loss = self.loss_fn(preds, y)
+        aux_loss = 0.
+        for seg_head in seg_heads:
+            seg_head_preds = self.postprocessing(seg_head) if self.postprocessing else seg_head
+            aux_loss += self.loss_fn(seg_head_preds, y)
+        loss += self.config.seg_heads_loss_weight * aux_loss
+        acc = self.accuracy(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
+        self.log("test/loss", loss, prog_bar=True)
+        self.log("test/acc", acc, prog_bar=True)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        preds, seg_heads = self(x, inference=False)
+        loss = self.loss_fn(preds, y)
+        aux_loss = 0.
+        for seg_head in seg_heads:
+            seg_head_preds = self.postprocessing(seg_head) if self.postprocessing else seg_head
+            aux_loss += self.loss_fn(seg_head_preds, y)
+        loss += self.config.seg_heads_loss_weight * aux_loss
+        acc = self.accuracy(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
+        self.log("val/loss", loss, prog_bar=True)
+        self.log("val/acc", acc, prog_bar=True)
+        return acc
