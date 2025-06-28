@@ -17,7 +17,7 @@ class OxfordIITDataModule(L.LightningDataModule):
         self.transform = v2.Compose(
             [
                 v2.ToImage(),
-                v2.Resize(config.image_size),
+                v2.Resize((config.image_size, config.image_size)),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ]
@@ -25,7 +25,7 @@ class OxfordIITDataModule(L.LightningDataModule):
         self.target_transform = v2.Compose(
             [
                 v2.ToImage(),
-                v2.Resize(config.image_size),
+                v2.Resize((config.image_size, config.image_size)),
                 v2.ToDtype(torch.long),
                 # indexes start at 1 according to readme, squeeze for CE loss
                 v2.Lambda(lambda x: torch.squeeze(x) - 1),

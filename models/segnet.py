@@ -213,7 +213,7 @@ class SegNet(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-segmentation",
             ),
         )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, inference=True) -> torch.Tensor:
         # region encoder
         x1 = self.conv1(x)
         x1_pool, x1_indices = self.pool(x1)

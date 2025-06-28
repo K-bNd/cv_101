@@ -1,6 +1,6 @@
 from typing import Literal
-from task import BasicClassification, BasicSegmentation
-from models import LeNet, BasicNN, VGG16, SegNet, ResNet34, ResNet50
+from task import BasicClassification, BasicSegmentation, BiSeNetV2Segmentation
+from models import LeNet, BasicNN, VGG16, SegNet, ResNet34, ResNet50, BiSeNetV2
 from datamodules import (
     CIFAR10DataModule,
     MNISTDataModule,
@@ -19,12 +19,12 @@ from lightning.pytorch.callbacks import (
     OnExceptionCheckpoint,
 )
 from argparse import ArgumentParser
-from configs import TrainConfig, ImageNetTrainConfig
+from configs import TrainConfig, ImageNetTrainConfig, BiSeNetV2TrainConfig
 from yaml import load, FullLoader
 
 
 def pick_dataset(
-    dataset: str, config: TrainConfig | ImageNetTrainConfig
+    dataset: str, config: TrainConfig | ImageNetTrainConfig | BiSeNetV2TrainConfig
 ) -> tuple[L.LightningDataModule, Literal["classification", "segmentation"]]:
     """Init datamodule based on the dataset name
     Args:
@@ -64,6 +64,8 @@ def pick_model(model: str, in_channels: int, num_classes: int) -> nn.Module:
             return VGG16(num_classes=num_classes)
         case "segnet":
             return SegNet(in_channels, num_classes)
+        case 'bisenetv2':
+            return BiSeNetV2(in_channels, num_classes)
         case "resnet34":
             return ResNet34(in_channels, num_classes)
         case "resnet50":
@@ -74,11 +76,13 @@ def pick_model(model: str, in_channels: int, num_classes: int) -> nn.Module:
             )
 
 
-def get_config(dataset: str) -> ImageNetTrainConfig | TrainConfig:
+def get_config(model: str, dataset: str) -> ImageNetTrainConfig | TrainConfig | BiSeNetV2TrainConfig:
     config_class = None
-    match dataset:
-        case "imagenet":
+    match [dataset, model]:
+        case ["imagenet", _]:
             config_class = ImageNetTrainConfig
+        case [_, 'bisenetv2']:
+            config_class = BiSeNetV2TrainConfig
         case _:
             config_class = TrainConfig
     with open(f"configs/{dataset}.yaml", "r") as f:
@@ -96,14 +100,16 @@ if __name__ == "__main__":
 
     # Parse the user inputs and defaults (returns a argparse.Namespace)
     args = parser.parse_args()
-    config = get_config(args.dataset)
+    config = get_config(args.model, args.dataset)
     datamodule, task_type = pick_dataset(args.dataset, config)
     model = pick_model(args.model, config.in_channels, config.num_classes)
     task = None
-    match task_type:
-        case "classification":
+    match [task_type, args.model]:
+        case ["classification", _]:
             task = BasicClassification(config)
-        case "segmentation":
+        case ['segmentation', 'bisenetv2']:
+            task = BiSeNetV2Segmentation(config)
+        case ["segmentation", _]:
             task = BasicSegmentation(config)
         case _:
             raise NotImplementedError()
