@@ -25,7 +25,7 @@ class OxfordIITDataModule(L.LightningDataModule):
         self.target_transform = v2.Compose(
             [
                 v2.ToImage(),
-                v2.Resize((config.image_size, config.image_size)),
+                v2.Resize((config.image_size, config.image_size), interpolation=v2.InterpolationMode.NEAREST_EXACT),
                 v2.ToDtype(torch.long),
                 # indexes start at 1 according to readme, squeeze for CE loss
                 v2.Lambda(lambda x: torch.squeeze(x) - 1),
