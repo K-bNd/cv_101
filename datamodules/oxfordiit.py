@@ -9,7 +9,7 @@ from configs.config_models import TrainConfig
 
 class OxfordIITDataModule(L.LightningDataModule):
     def __init__(
-        self, config: TrainConfig, data_dir: str = "../datasets/oxford_iit_pets"
+        self, config: TrainConfig, data_dir: str = "datasets/oxford_iit_pets"
     ):
         super().__init__()
         self.data_dir = data_dir

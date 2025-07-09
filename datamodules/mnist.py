@@ -8,7 +8,7 @@ from configs.config_models import TrainConfig
 
 
 class MNISTDataModule(L.LightningDataModule):
-    def __init__(self, config: TrainConfig, data_dir: str = "../datasets/mnist"):
+    def __init__(self, config: TrainConfig, data_dir: str = "datasets/mnist"):
         super().__init__()
         self.data_dir = data_dir
         self.transform = v2.Compose(
