@@ -7,6 +7,7 @@ from datamodules import (
     OxfordIITDataModule,
     ImagenetteDataModule,
     ImageNetDataModule,
+    VOCSegmentationDataModule
 )
 import lightning as L
 import torch.nn as nn
@@ -47,6 +48,9 @@ def pick_dataset(
             task_type = "segmentation"
         case "imagenet":
             datamodule = ImageNetDataModule(config)
+        case "voc_seg":
+            datamodule = VOCSegmentationDataModule(config=config)
+            task_type = "segmentation"
         case _:
             raise NotImplementedError(
                 "The chosen dataset is invalid, please choose from the following: cifar10, imagenette, mnist, oxford"
@@ -130,7 +134,6 @@ if __name__ == "__main__":
     callbacks: list[Callback] = [
         LearningRateMonitor("epoch"),
         checkpoint_callback,
-        OnExceptionCheckpoint(dirpath="./exception_model_checkpoint"),
     ]
     if config.early_stopping:
         callbacks.append(
