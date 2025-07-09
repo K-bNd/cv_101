@@ -2,6 +2,7 @@ from torch import optim, nn
 import lightning as L
 import torch
 from typing import Callable, Literal, Optional
+from torchmetrics import Accuracy
 from torchmetrics.segmentation import MeanIoU, GeneralizedDiceScore
 
 from configs.config_models import TrainConfig, BiSeNetV2TrainConfig
@@ -27,10 +28,9 @@ class BasicSegmentation(L.LightningModule):
         super().__init__()
         self.postprocessing = None
         self.config = config
-        self.accuracy = MeanIoU(
-            num_classes=config.num_classes, input_format=input_format
-        )
-        self.loss_fn = nn.CrossEntropyLoss()
+        self.iou = MeanIoU(num_classes=config.num_classes, input_format=input_format)
+        self.accuracy = Accuracy(task='multiclass', num_classes=config.num_classes, ignore_index=255)
+        self.loss_fn = nn.CrossEntropyLoss(ignore_index=255) # 255 is for ambiguous labels in VOC
         self.loss_fn_2 = GeneralizedDiceScore(
             num_classes=config.num_classes, input_format=input_format
         )
@@ -49,8 +49,10 @@ class BasicSegmentation(L.LightningModule):
         preds = self(x, inference=False)
         loss = self.loss_fn(preds, y)
         acc = self.accuracy(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
+        iou = self.iou(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
         self.log("train/loss", loss, prog_bar=True)
         self.log("train/acc", acc, prog_bar=True)
+        self.log("train/iou", iou, prog_bar=True)
         return loss
 
     def test_step(self, batch, batch_idx):
@@ -58,17 +60,23 @@ class BasicSegmentation(L.LightningModule):
         preds = self(x, inference=False)
         loss = self.loss_fn(preds, y)
         acc = self.accuracy(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
+        iou = self.iou(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
         self.log("test/loss", loss, prog_bar=True)
         self.log("test/acc", acc, prog_bar=True)
+        self.log("test/iou", iou, prog_bar=True)
         return acc
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         preds = self(x, inference=False)
+        print(x.shape, y.shape)
+        print(y.min(), y.max())
         loss = self.loss_fn(preds, y)
         acc = self.accuracy(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
+        iou = self.iou(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
         self.log("val/loss", loss, prog_bar=True)
         self.log("val/acc", acc, prog_bar=True)
+        self.log("val/iou", iou, prog_bar=True)
         return acc
 
     def predict_step(self, batch):
