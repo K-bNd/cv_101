@@ -4,7 +4,6 @@ from torch.utils.data import random_split, DataLoader
 import torch
 from torchvision.datasets import VOCSegmentation
 from torchvision.transforms import v2
-
 from configs.config_models import TrainConfig
 
 
@@ -35,9 +34,9 @@ class VOCSegmentationDataModule(L.LightningDataModule):
         self.target_transform = v2.Compose(
             [
                 v2.ToImage(),
-                v2.Resize((config.image_size, config.image_size)),
+                v2.Resize((config.image_size, config.image_size), interpolation=v2.InterpolationMode.NEAREST_EXACT), # we use nearest since bilinear would introduce values next to 255
                 v2.ToDtype(torch.long),
-                # v2.Lambda(handle_ambiguous_label),
+                v2.Lambda(torch.squeeze),
             ]
         )
 
