@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 
 class TrainConfig(BaseModel):
-    image_size: int = 32
+    image_size: int = 224
     num_classes: int = 10
     in_channels: int = 3
     batch_size: int = 512
@@ -18,6 +18,7 @@ class TrainConfig(BaseModel):
     optimizer_params: dict = {}
     lr_scheduler: Literal["step", "cosine", "plateau"] = 'plateau'
     lr_scheduler_params: dict = {}
+    ignore_index: int = 255
 
 class ImageNetTrainConfig(TrainConfig):
     train_res: int = 224

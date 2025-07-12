@@ -8,7 +8,7 @@ from configs.config_models import TrainConfig
 
 
 class ImagenetteDataModule(L.LightningDataModule):
-    def __init__(self, config: TrainConfig, data_dir: str = "../datasets/imagenette"):
+    def __init__(self, config: TrainConfig, data_dir: str = "datasets/imagenette"):
         super().__init__()
         self.data_dir = data_dir
         self.config = config

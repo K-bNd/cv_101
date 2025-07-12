@@ -1,15 +1,24 @@
+from typing import Callable
 import lightning as L
 from torch.utils.data import random_split, DataLoader
 import torch
-from torchvision.datasets import OxfordIIITPet
+from torchvision.datasets import VOCSegmentation
 from torchvision.transforms import v2
-
 from configs.config_models import TrainConfig
 
 
-class OxfordIITDataModule(L.LightningDataModule):
+def handle_ambiguous_label(num_classes=21) -> Callable:
+    """In VOCSegmentation, bordering regions are marked with a `void' label (index 255)
+    We shall remap it to background (index 0) for now"""
+    def func(label: torch.Tensor):
+        label[label > num_classes] = 0.0
+        return torch.squeeze(label)
+    return func
+
+
+class VOCSegmentationDataModule(L.LightningDataModule):
     def __init__(
-        self, config: TrainConfig, data_dir: str = "datasets/oxford_iit_pets"
+        self, config: TrainConfig, data_dir: str = "datasets/voc_segmentation"
     ):
         super().__init__()
         self.data_dir = data_dir
@@ -25,43 +34,36 @@ class OxfordIITDataModule(L.LightningDataModule):
         self.target_transform = v2.Compose(
             [
                 v2.ToImage(),
-                v2.Resize((config.image_size, config.image_size), interpolation=v2.InterpolationMode.NEAREST_EXACT),
+                v2.Resize((config.image_size, config.image_size), interpolation=v2.InterpolationMode.NEAREST_EXACT), # we use nearest since bilinear would introduce values next to 255
                 v2.ToDtype(torch.long),
-                # indexes start at 1 according to readme, squeeze for CE loss
-                v2.Lambda(lambda x: torch.squeeze(x) - 1),
+                v2.Lambda(torch.squeeze),
             ]
         )
 
     def prepare_data(self):
         # download
-        OxfordIIITPet(
-            self.data_dir, split="trainval", target_types="segmentation", download=True
-        )
-        OxfordIIITPet(
-            self.data_dir, split="test", target_types="segmentation", download=True
-        )
+        VOCSegmentation(self.data_dir, image_set="train", download=True)
+        VOCSegmentation(self.data_dir, image_set="val", download=True)
 
     def setup(self, stage: str):
         # Assign train/val datasets for use in dataloaders
         if stage == "fit":
-            oxford_full = OxfordIIITPet(
+            voc_train = VOCSegmentation(
                 self.data_dir,
-                split="trainval",
-                target_types="segmentation",
+                image_set="train",
                 download=False,
                 transform=self.transform,
                 target_transform=self.target_transform,
             )
             self.train_dataset, self.val_dataset = random_split(
-                oxford_full, [0.9, 0.1], generator=torch.Generator().manual_seed(42)
+                voc_train, [0.9, 0.1], generator=torch.Generator().manual_seed(42)
             )
 
         # Assign test dataset for use in dataloader(s)
         if stage == "test":
-            self.test_dataset = OxfordIIITPet(
+            self.test_dataset = VOCSegmentation(
                 self.data_dir,
-                split="test",
-                target_types="segmentation",
+                image_set="val",
                 download=False,
                 transform=self.transform,
                 target_transform=self.target_transform,

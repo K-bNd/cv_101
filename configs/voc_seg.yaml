@@ -1,7 +1,7 @@
 image_size: 224
-batch_size: 32
+batch_size: 4
 in_channels: 3
-num_classes: 3
+num_classes: 21
 start_lr: 0.01
 epochs: 300
 early_stopping: False

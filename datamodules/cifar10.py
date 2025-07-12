@@ -8,7 +8,7 @@ from configs.config_models import TrainConfig
 
 
 class CIFAR10DataModule(L.LightningDataModule):
-    def __init__(self, config: TrainConfig, data_dir: str = "../datasets/cifar10"):
+    def __init__(self, config: TrainConfig, data_dir: str = "datasets/cifar10"):
         super().__init__()
         self.data_dir = data_dir
         self.config = config

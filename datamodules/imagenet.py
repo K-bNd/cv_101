@@ -33,7 +33,7 @@ class ImageNetDataModule(L.LightningDataModule):
     def __init__(
         self,
         config: ImageNetTrainConfig,
-        data_dir: str = "../datasets/imagenet",
+        data_dir: str = "datasets/imagenet",
     ):
         super().__init__()
         self.save_hyperparameters("data_dir")  # Saves args to self.hparams
