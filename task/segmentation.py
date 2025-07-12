@@ -52,7 +52,7 @@ class BasicSegmentation(L.LightningModule):
         preds = self(x, inference=False)
         loss = self.loss_fn(preds, y)
         acc = self.accuracy(torch.argmax(preds, dim=1), y)
-        y[y == self.config.ignore_index] = 0 # current iou can't ignore a given index so we map to background
+        y = torch.where(y == self.config.ignore_index, 0., y).to(dtype=y.dtype) # current iou can't ignore a given index so we map to background
         iou = self.iou(torch.argmax(preds, dim=1), y)
         self.log("train/loss", loss, prog_bar=True)
         self.log("train/acc", acc, prog_bar=True)
@@ -64,7 +64,7 @@ class BasicSegmentation(L.LightningModule):
         preds = self(x, inference=False)
         loss = self.loss_fn(preds, y)
         acc = self.accuracy(torch.argmax(preds, dim=1), y)
-        y[y == self.config.ignore_index] = 0 # current iou can't ignore a given index so we map to background
+        y = torch.where(y == self.config.ignore_index, 0., y).to(dtype=y.dtype) # current iou can't ignore a given index so we map to background
         iou = self.iou(torch.argmax(preds, dim=1), y)
         self.log("test/loss", loss, prog_bar=True)
         self.log("test/acc", acc, prog_bar=True)
@@ -76,7 +76,7 @@ class BasicSegmentation(L.LightningModule):
         preds = self(x, inference=False)
         loss = self.loss_fn(preds, y)
         acc = self.accuracy(torch.argmax(preds, dim=1), y)
-        y[y == self.config.ignore_index] = 0 # current iou can't ignore a given index so we map to background
+        y = torch.where(y == self.config.ignore_index, 0., y).to(dtype=y.dtype) # current iou can't ignore a given index so we map to background
         iou = self.iou(torch.argmax(preds, dim=1), y)
         self.log("val/loss", loss, prog_bar=True)
         self.log("val/acc", acc, prog_bar=True)
