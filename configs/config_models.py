@@ -18,6 +18,7 @@ class TrainConfig(BaseModel):
     optimizer_params: dict = {}
     lr_scheduler: Literal["step", "cosine", "plateau"] = 'plateau'
     lr_scheduler_params: dict = {}
+    ignore_index: int = 255
 
 class ImageNetTrainConfig(TrainConfig):
     train_res: int = 224

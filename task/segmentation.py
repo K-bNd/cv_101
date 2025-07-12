@@ -29,8 +29,11 @@ class BasicSegmentation(L.LightningModule):
         self.postprocessing = None
         self.config = config
         self.iou = MeanIoU(num_classes=config.num_classes, input_format=input_format)
-        self.accuracy = Accuracy(task='multiclass', num_classes=config.num_classes, ignore_index=255)
-        self.loss_fn = nn.CrossEntropyLoss(ignore_index=255) # 255 is for ambiguous labels in VOC
+        self.accuracy = Accuracy(
+            task="multiclass", num_classes=config.num_classes, ignore_index=config.ignore_index
+        )
+        # 255 is for ambiguous labels in VOC
+        self.loss_fn = nn.CrossEntropyLoss(ignore_index=config.ignore_index)
         self.loss_fn_2 = GeneralizedDiceScore(
             num_classes=config.num_classes, input_format=input_format
         )
@@ -48,8 +51,9 @@ class BasicSegmentation(L.LightningModule):
         x, y = batch
         preds = self(x, inference=False)
         loss = self.loss_fn(preds, y)
-        acc = self.accuracy(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
-        iou = self.iou(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
+        acc = self.accuracy(torch.argmax(preds, dim=1), y)
+        y[y == self.config.ignore_index] = 0 # current iou can't ignore a given index so we map to background
+        iou = self.iou(torch.argmax(preds, dim=1), y)
         self.log("train/loss", loss, prog_bar=True)
         self.log("train/acc", acc, prog_bar=True)
         self.log("train/iou", iou, prog_bar=True)
@@ -59,8 +63,9 @@ class BasicSegmentation(L.LightningModule):
         x, y = batch
         preds = self(x, inference=False)
         loss = self.loss_fn(preds, y)
-        acc = self.accuracy(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
-        iou = self.iou(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
+        acc = self.accuracy(torch.argmax(preds, dim=1), y)
+        y[y == self.config.ignore_index] = 0 # current iou can't ignore a given index so we map to background
+        iou = self.iou(torch.argmax(preds, dim=1), y)
         self.log("test/loss", loss, prog_bar=True)
         self.log("test/acc", acc, prog_bar=True)
         self.log("test/iou", iou, prog_bar=True)
@@ -69,11 +74,10 @@ class BasicSegmentation(L.LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y = batch
         preds = self(x, inference=False)
-        print(x.shape, y.shape)
-        print(y.min(), y.max())
         loss = self.loss_fn(preds, y)
-        acc = self.accuracy(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
-        iou = self.iou(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
+        acc = self.accuracy(torch.argmax(preds, dim=1), y)
+        y[y == self.config.ignore_index] = 0 # current iou can't ignore a given index so we map to background
+        iou = self.iou(torch.argmax(preds, dim=1), y)
         self.log("val/loss", loss, prog_bar=True)
         self.log("val/acc", acc, prog_bar=True)
         self.log("val/iou", iou, prog_bar=True)
@@ -128,7 +132,9 @@ class BiSeNetV2Segmentation(BasicSegmentation):
         loss = self.loss_fn(preds, y)
         aux_loss = 0.0
         for seg_head in seg_heads:
-            seg_head_preds = self.postprocessing(seg_head) if self.postprocessing else seg_head
+            seg_head_preds = (
+                self.postprocessing(seg_head) if self.postprocessing else seg_head
+            )
             aux_loss += self.loss_fn(seg_head_preds, y)
         loss += self.config.seg_heads_loss_weight * aux_loss
         acc = self.accuracy(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
@@ -140,9 +146,11 @@ class BiSeNetV2Segmentation(BasicSegmentation):
         x, y = batch
         preds, seg_heads = self(x, inference=False)
         loss = self.loss_fn(preds, y)
-        aux_loss = 0.
+        aux_loss = 0.0
         for seg_head in seg_heads:
-            seg_head_preds = self.postprocessing(seg_head) if self.postprocessing else seg_head
+            seg_head_preds = (
+                self.postprocessing(seg_head) if self.postprocessing else seg_head
+            )
             aux_loss += self.loss_fn(seg_head_preds, y)
         loss += self.config.seg_heads_loss_weight * aux_loss
         acc = self.accuracy(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
@@ -154,9 +162,11 @@ class BiSeNetV2Segmentation(BasicSegmentation):
         x, y = batch
         preds, seg_heads = self(x, inference=False)
         loss = self.loss_fn(preds, y)
-        aux_loss = 0.
+        aux_loss = 0.0
         for seg_head in seg_heads:
-            seg_head_preds = self.postprocessing(seg_head) if self.postprocessing else seg_head
+            seg_head_preds = (
+                self.postprocessing(seg_head) if self.postprocessing else seg_head
+            )
             aux_loss += self.loss_fn(seg_head_preds, y)
         loss += self.config.seg_heads_loss_weight * aux_loss
         acc = self.accuracy(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
