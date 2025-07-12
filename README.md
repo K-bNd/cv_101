@@ -29,5 +29,5 @@ Datasets:
 - [X] Pascal VOC Segmentation
 - [ ] Pascal VOC Detection
 - [ ] CIFAR100
-- Cityscapes
-- ADE20k
+- [ ] Cityscapes
+- [ ] ADE20k
