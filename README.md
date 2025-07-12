@@ -26,5 +26,8 @@ Datasets:
 - [X] Imagenette
 - [X] ImageNet
 - [X] Oxford IIT Pets
+- [X] Pascal VOC Segmentation
+- [ ] Pascal VOC Detection
 - [ ] CIFAR100
-- [ ] Pascal VOC
+- Cityscapes
+- ADE20k
