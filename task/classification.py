@@ -86,23 +86,25 @@ class BasicClassification(L.LightningModule):
         optimizer = getattr(optim, self.config.optimizer)(
             self.parameters(), lr=self.config.start_lr, **self.config.optimizer_params
         )
-        match self.config.lr_scheduler:
-            case "plateau":
-                scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer=optimizer, **self.config.lr_scheduler_params
-                )
-            case "cosine":
-                scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
-                    optimizer, **self.config.lr_scheduler_params
-                )
-            case "step":
-                scheduler = optim.lr_scheduler.StepLR(
-                    optimizer, **self.config.lr_scheduler_params
-                )
+        warmup_epochs = int(self.config.epochs * 0.05)
+        main_epochs = int(self.config.epochs * 0.7)
+        final_epochs = int(self.config.epochs * 0.25)
+        warmup_scheduler = optim.lr_scheduler.LinearLR(
+            optimizer=optimizer, start_factor=1e-4, total_iters=warmup_epochs
+        )
+        main_scheduler = optim.lr_scheduler.ConstantLR(
+            optimizer=optimizer, factor=1.0, total_iters=main_epochs
+        )
+        last_scheduler = optim.lr_scheduler.CosineAnnealingLR(
+            optimizer=optimizer, T_max=final_epochs
+        )
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
-                "scheduler": scheduler,
-                "monitor": "val/loss",
+                "scheduler": optim.lr_scheduler.SequentialLR(
+                    optimizer=optimizer,
+                    schedulers=[warmup_scheduler, main_scheduler, last_scheduler],
+                    milestones=[warmup_epochs, main_epochs],
+                ),
             },
         }
