@@ -52,6 +52,7 @@ class ResidualBlock(nn.Module):
                     out_channels=out_channels,
                     kernel_size=1,
                     stride=2,
+                    relu=False
                 )
             )
             if in_channels != out_channels
@@ -71,12 +72,13 @@ class ResidualBlock(nn.Module):
                 kernel_size=kernel_size,
                 stride=stride,
                 padding=padding,
+                relu=False
             ),
         )
 
     def forward(self, x: torch.Tensor):
         out = self.conv(x)
-        return out + self.shortcut(x)
+        return torch.nn.functional.relu(out + self.shortcut(x))
 
 
 class BottleneckBlock(nn.Module):
@@ -102,6 +104,7 @@ class BottleneckBlock(nn.Module):
                     out_channels=out_channels,
                     kernel_size=1,
                     stride=2,
+                    relu=False
                 )
             )
             if in_channels != out_channels
@@ -129,12 +132,13 @@ class BottleneckBlock(nn.Module):
                 kernel_size=1,
                 stride=1,
                 padding=0,
+                relu=False
             ),
         )
 
     def forward(self, x: torch.Tensor):
         out = self.conv(x)
-        return out + self.shortcut(x)
+        return torch.nn.functional.relu(out + self.shortcut(x))
 
 
 # endregion
