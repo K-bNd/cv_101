@@ -3,7 +3,7 @@ num_classes: 1000
 in_channels: 3
 batch_size: 512
 start_lr: 0.01
-epochs: 300
+epochs: 100
 auto_augment: True
 rand_augment: True
 early_stopping: False
