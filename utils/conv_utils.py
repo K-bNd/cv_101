@@ -1,6 +1,6 @@
 from typing import Union
 import torch
-import torch.functional as F
+import torch.nn.functional as F
 import torch.nn as nn
 
 
@@ -32,6 +32,14 @@ def create_conv_block(
 
 # region ResNet
 
+class ManualDownsamplingLayer(nn.Module):
+    """Parameter-free downsampling"""
+    def __init__(self, channels: int):
+        super(ManualDownsamplingLayer, self).__init__()
+        self.downsample_func = lambda x: F.pad(x[:, :, ::2, ::2], (0, 0, 0, 0, channels//4, channels//4), "constant", 0)
+
+    def forward(self, x: torch.Tensor):
+        return self.downsample_func(x)
 
 class ResidualBlock(nn.Module):
     """Residual learning block (ResNet-34) from the ResNet paper"""
@@ -43,42 +51,45 @@ class ResidualBlock(nn.Module):
         kernel_size: int,
         stride: int,
         padding: Union[int, str] = 0,
+        identity_shortcut: bool = False
     ):
         super(ResidualBlock, self).__init__()
-        self.shortcut = (
-            nn.Sequential(
-                *create_conv_block(
-                    in_channels=in_channels,
-                    out_channels=out_channels,
-                    kernel_size=1,
-                    stride=2,
-                    relu=False
+        if identity_shortcut:
+            self.shortcut = ManualDownsamplingLayer(out_channels) if in_channels != out_channels or stride != 1 else nn.Identity()
+        else:
+            self.shortcut = (
+                nn.Sequential(
+                    *create_conv_block(
+                        in_channels=in_channels,
+                        out_channels=out_channels,
+                        kernel_size=1,
+                        stride=2,
+                        relu=False
+                    )
                 )
+                if in_channels != out_channels or stride != 1
+                else nn.Identity()
             )
-            if in_channels != out_channels
-            else nn.Identity()
-        )
         self.conv = nn.Sequential(
             *create_conv_block(
                 in_channels=in_channels,
                 out_channels=out_channels,
                 kernel_size=kernel_size,
-                stride=stride if in_channels == out_channels else 2,
+                stride=stride,
                 padding=padding,
             ),
             *create_conv_block(
                 in_channels=out_channels,
                 out_channels=out_channels,
                 kernel_size=kernel_size,
-                stride=stride,
+                stride=1,
                 padding=padding,
                 relu=False
             ),
         )
 
     def forward(self, x: torch.Tensor):
-        out = self.conv(x)
-        return torch.nn.functional.relu(out + self.shortcut(x))
+        return torch.nn.functional.relu(self.conv(x) + self.shortcut(x))
 
 
 class BottleneckBlock(nn.Module):
@@ -123,7 +134,7 @@ class BottleneckBlock(nn.Module):
                 in_channels=reduce_dim,
                 out_channels=reduce_dim,
                 kernel_size=kernel_size,
-                stride=stride if in_channels == out_channels else 2,
+                stride=stride,
                 padding=padding,
             ),
             *create_conv_block(
@@ -137,8 +148,7 @@ class BottleneckBlock(nn.Module):
         )
 
     def forward(self, x: torch.Tensor):
-        out = self.conv(x)
-        return torch.nn.functional.relu(out + self.shortcut(x))
+        return torch.nn.functional.relu(self.conv(x) + self.shortcut(x))
 
 
 # endregion

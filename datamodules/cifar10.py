@@ -6,21 +6,33 @@ from torchvision.transforms import v2, InterpolationMode
 
 from configs.config_models import TrainConfig
 
+CIFAR10_MEAN = [0.4914, 0.4822, 0.4465]
+CIFAR10_STD = [0.247, 0.243, 0.261]
 
 class CIFAR10DataModule(L.LightningDataModule):
     def __init__(self, config: TrainConfig, data_dir: str = "datasets/cifar10"):
         super().__init__()
         self.data_dir = data_dir
         self.config = config
-        self.transform = v2.Compose(
+        self.train_transform = v2.Compose(
             [
                 v2.ToImage(),
-                v2.Resize(config.image_size),
+                v2.RandomCrop(config.image_size, padding=4),
                 v2.AutoAugment(v2.AutoAugmentPolicy.CIFAR10, interpolation=InterpolationMode.BILINEAR) if config.auto_augment else v2.Identity(),
                 v2.RandAugment(interpolation=InterpolationMode.BILINEAR) if config.rand_augment else v2.Identity(),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                    mean=CIFAR10_MEAN, std=CIFAR10_STD
+                ),
+            ])
+
+        self.test_transform = v2.Compose(
+            [
+                v2.ToImage(),
+                v2.Resize(config.image_size),
+                v2.ToDtype(torch.float32, scale=True),
+                v2.Normalize(
+                    mean=CIFAR10_MEAN, std=CIFAR10_STD
                 ),
             ])
 
@@ -33,7 +45,7 @@ class CIFAR10DataModule(L.LightningDataModule):
         # Assign train/val datasets for use in dataloaders
         if stage == "fit":
             cifar10_full = CIFAR10(
-                self.data_dir, train=True, download=False, transform=self.transform)
+                self.data_dir, train=True, download=False, transform=self.train_transform)
             self.train_dataset, self.val_dataset = random_split(
                 cifar10_full, [0.9, 0.1], generator=torch.Generator().manual_seed(42)
             )
@@ -41,7 +53,7 @@ class CIFAR10DataModule(L.LightningDataModule):
         # Assign test dataset for use in dataloader(s)
         if stage == "test":
             self.test_dataset = CIFAR10(
-                self.data_dir, train=False, download=False, transform=self.transform)
+                self.data_dir, train=False, download=False, transform=self.test_transform)
 
     def train_dataloader(self):
         return DataLoader(

@@ -1,6 +1,7 @@
 from typing import Literal
+from models.cifar_resnet import cifar_resnet1202
 from task import BasicClassification, BasicSegmentation, BiSeNetV2Segmentation
-from models import LeNet, BasicNN, VGG16, SegNet, ResNet34, ResNet50, BiSeNetV2
+from models import LeNet, BasicNN, VGG16, SegNet, ResNet34, ResNet50, BiSeNetV2, cifar_resnet20, cifar_resnet32, cifar_resnet44, cifar_resnet56, cifar_resnet110
 from datamodules import (
     CIFAR10DataModule,
     MNISTDataModule,
@@ -74,9 +75,21 @@ def pick_model(model: str, in_channels: int, num_classes: int) -> nn.Module:
             return ResNet34(in_channels, num_classes)
         case "resnet50":
             return ResNet50(in_channels, num_classes)
+        case "cifar_resnet_20":
+            return cifar_resnet20(in_channels, num_classes)
+        case "cifar_resnet_32":
+            return cifar_resnet32(in_channels, num_classes)
+        case "cifar_resnet_44":
+            return cifar_resnet44(in_channels, num_classes)
+        case "cifar_resnet_56":
+            return cifar_resnet56(in_channels, num_classes)
+        case "cifar_resnet_110":
+            return cifar_resnet110(in_channels, num_classes)
+        case "cifar_resnet_1202":
+            return cifar_resnet1202(in_channels, num_classes)
         case _:
             raise NotImplementedError(
-                "The chosen model is invalid, please choose from the following: lenet, basic_nn, vgg16, segnet, resnet34, resnet50"
+                "The chosen model is invalid, please choose from the following: lenet, basic_nn, vgg16, segnet, resnet34, resnet50, cifar_resnet_{20, 32, 44, 56, 110, 1202}"
             )
 
 

@@ -1,9 +1,9 @@
 image_size: 32
 num_classes: 10
 in_channels: 3
-batch_size: 512
+batch_size: 256
 start_lr: 0.01
-epochs: 300
+epochs: 100
 early_stopping: False
 early_stopping_patience: 10
 auto_augment: True
