@@ -137,9 +137,12 @@ class BiSeNetV2Segmentation(BasicSegmentation):
             )
             aux_loss += self.loss_fn(seg_head_preds, y)
         loss += self.config.seg_heads_loss_weight * aux_loss
-        acc = self.accuracy(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
+        acc = self.accuracy(torch.argmax(preds, dim=1), y)
+        y = torch.where(y == self.config.ignore_index, 0., y).to(dtype=y.dtype) # current iou can't ignore a given index so we map to background
+        iou = self.iou(torch.argmax(preds, dim=1), y)
         self.log("train/loss", loss, prog_bar=True)
         self.log("train/acc", acc, prog_bar=True)
+        self.log("train/iou", iou, prog_bar=True)
         return loss
 
     def test_step(self, batch, batch_idx):
@@ -153,9 +156,12 @@ class BiSeNetV2Segmentation(BasicSegmentation):
             )
             aux_loss += self.loss_fn(seg_head_preds, y)
         loss += self.config.seg_heads_loss_weight * aux_loss
-        acc = self.accuracy(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
+        acc = self.accuracy(torch.argmax(preds, dim=1), y)
+        y = torch.where(y == self.config.ignore_index, 0., y).to(dtype=y.dtype) # current iou can't ignore a given index so we map to background
+        iou = self.iou(torch.argmax(preds, dim=1), y)
         self.log("test/loss", loss, prog_bar=True)
         self.log("test/acc", acc, prog_bar=True)
+        self.log("test/iou", iou, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -169,7 +175,10 @@ class BiSeNetV2Segmentation(BasicSegmentation):
             )
             aux_loss += self.loss_fn(seg_head_preds, y)
         loss += self.config.seg_heads_loss_weight * aux_loss
-        acc = self.accuracy(torch.argmax(preds, dim=1, keepdim=True), y[:, None, :, :])
+        acc = self.accuracy(torch.argmax(preds, dim=1), y)
+        y = torch.where(y == self.config.ignore_index, 0., y).to(dtype=y.dtype) # current iou can't ignore a given index so we map to background
+        iou = self.iou(torch.argmax(preds, dim=1), y)
         self.log("val/loss", loss, prog_bar=True)
         self.log("val/acc", acc, prog_bar=True)
+        self.log("val/iou", iou, prog_bar=True)
         return acc

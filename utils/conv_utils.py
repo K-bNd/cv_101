@@ -91,7 +91,6 @@ class ResidualBlock(nn.Module):
     def forward(self, x: torch.Tensor):
         return torch.nn.functional.relu(self.conv(x) + self.shortcut(x))
 
-
 class BottleneckBlock(nn.Module):
     def __init__(
         self,
@@ -149,7 +148,6 @@ class BottleneckBlock(nn.Module):
 
     def forward(self, x: torch.Tensor):
         return torch.nn.functional.relu(self.conv(x) + self.shortcut(x))
-
 
 # endregion
 
