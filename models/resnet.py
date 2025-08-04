@@ -21,7 +21,7 @@ class ResNet50(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-classificati
             # endregion
             # region conv2_x (56x56)
             BottleneckBlock(
-                in_channels=64, reduce_dim=64, out_channels=256, kernel_size=3, stride=1, padding=1
+                in_channels=64, reduce_dim=64, out_channels=256, kernel_size=3, stride=2, padding=1
             ),
             BottleneckBlock(
                 in_channels=256, reduce_dim=64, out_channels=256, kernel_size=3, stride=1, padding=1
@@ -32,7 +32,7 @@ class ResNet50(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-classificati
             # endregion
             # region conv3_x (28x28)
             BottleneckBlock(
-                in_channels=256, reduce_dim=128, out_channels=512, kernel_size=3, stride=1, padding=1
+                in_channels=256, reduce_dim=128, out_channels=512, kernel_size=3, stride=2, padding=1
             ),
             BottleneckBlock(
                 in_channels=512, reduce_dim=128, out_channels=512, kernel_size=3, stride=1, padding=1
@@ -46,7 +46,7 @@ class ResNet50(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-classificati
             # endregion
             # region conv4_x (14x14)
             BottleneckBlock(
-                in_channels=512, reduce_dim=256, out_channels=1024, kernel_size=3, stride=1, padding=1
+                in_channels=512, reduce_dim=256, out_channels=1024, kernel_size=3, stride=2, padding=1
             ),
             BottleneckBlock(
                 in_channels=1024, reduce_dim=256, out_channels=1024, kernel_size=3, stride=1, padding=1
@@ -66,7 +66,7 @@ class ResNet50(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-classificati
             # endregion
             # region conv5_x (7x7)
             BottleneckBlock(
-                in_channels=1024, reduce_dim=512, out_channels=2048, kernel_size=3, stride=1, padding=1
+                in_channels=1024, reduce_dim=512, out_channels=2048, kernel_size=3, stride=2, padding=1
             ),
             BottleneckBlock(
                 in_channels=2048, reduce_dim=512, out_channels=2048, kernel_size=3, stride=1, padding=1
@@ -122,7 +122,7 @@ class ResNet34(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-classificati
             # endregion
             # region conv3_x
             ResidualBlock(
-                in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1
+                in_channels=64, out_channels=128, kernel_size=3, stride=2, padding=1
             ),
             ResidualBlock(
                 in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1
@@ -136,7 +136,7 @@ class ResNet34(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-classificati
             # endregion
             # region conv4_x
             ResidualBlock(
-                in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1
+                in_channels=128, out_channels=256, kernel_size=3, stride=2, padding=1
             ),
             ResidualBlock(
                 in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1
@@ -156,7 +156,7 @@ class ResNet34(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-classificati
             # endregion
             # region conv5_x
             ResidualBlock(
-                in_channels=256, out_channels=512, kernel_size=3, stride=1, padding=1
+                in_channels=256, out_channels=512, kernel_size=3, stride=2, padding=1
             ),
             ResidualBlock(
                 in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1
