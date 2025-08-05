@@ -104,7 +104,7 @@ class BasicClassification(L.LightningModule):
                 "scheduler": optim.lr_scheduler.SequentialLR(
                     optimizer=optimizer,
                     schedulers=[warmup_scheduler, main_scheduler, last_scheduler],
-                    milestones=[warmup_epochs, main_epochs],
+                    milestones=[warmup_epochs, main_epochs + warmup_epochs],
                 ),
             },
         }
