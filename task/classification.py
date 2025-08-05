@@ -87,17 +87,22 @@ class BasicClassification(L.LightningModule):
             self.parameters(), lr=self.config.start_lr, **self.config.optimizer_params
         )
         warmup_epochs = int(self.config.epochs * 0.05)
-        main_epochs = int(self.config.epochs * 0.7)
-        final_epochs = int(self.config.epochs * 0.25)
+        main_epochs = int(self.config.epochs * 0.55)
+        final_epochs = int(self.config.epochs * 0.4)
         warmup_scheduler = optim.lr_scheduler.LinearLR(
             optimizer=optimizer, start_factor=1e-4, total_iters=warmup_epochs
         )
         main_scheduler = optim.lr_scheduler.ConstantLR(
             optimizer=optimizer, factor=1.0, total_iters=main_epochs
         )
-        last_scheduler = optim.lr_scheduler.CosineAnnealingLR(
-            optimizer=optimizer, T_max=final_epochs
-        )
+        
+        match self.config.last_lr_scheduler:
+            case "cosine":
+                last_scheduler = optim.lr_scheduler.CosineAnnealingLR(
+                    optimizer=optimizer, T_max=final_epochs
+                )
+            case "step":
+                last_scheduler = optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=final_epochs // 3)
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
@@ -106,5 +111,6 @@ class BasicClassification(L.LightningModule):
                     schedulers=[warmup_scheduler, main_scheduler, last_scheduler],
                     milestones=[warmup_epochs, main_epochs + warmup_epochs],
                 ),
+                "monitor": "val/loss",
             },
         }
