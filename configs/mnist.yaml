@@ -9,5 +9,4 @@ early_stopping_patience: 10
 num_workers: 4
 optimizer: "Adam"
 optimizer_args: {}
-lr_scheduler: 'plateau'
-lr_scheduler_args: {'patience': 3}
+lr_scheduler: 'step'

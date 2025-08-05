@@ -16,7 +16,7 @@ class TrainConfig(BaseModel):
     rand_augment: bool = False
     optimizer: Literal["Adam", "AdamW", "SGD"] = "Adam"
     optimizer_params: dict = {}
-    last_lr_scheduler: Literal["step", "cosine", "plateau"] = 'plateau'
+    last_lr_scheduler: Literal["step", "cosine"] = 'cosine'
     lr_scheduler_params: dict = {}
     ignore_index: int = 255
 
