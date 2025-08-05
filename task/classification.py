@@ -95,9 +95,16 @@ class BasicClassification(L.LightningModule):
         main_scheduler = optim.lr_scheduler.ConstantLR(
             optimizer=optimizer, factor=1.0, total_iters=main_epochs
         )
-        last_scheduler = optim.lr_scheduler.CosineAnnealingLR(
-            optimizer=optimizer, T_max=final_epochs
-        )
+        
+        match self.config.last_lr_scheduler:
+            case "cosine":
+                last_scheduler = optim.lr_scheduler.CosineAnnealingLR(
+                    optimizer=optimizer, T_max=final_epochs
+                )
+            case "step":
+                last_scheduler = optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=10)
+            case "plateau":
+                last_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer)
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
