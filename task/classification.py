@@ -104,7 +104,7 @@ class BasicClassification(L.LightningModule):
             case "step":
                 last_scheduler = optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=10)
             case "plateau":
-                last_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer)
+                last_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, patience=5)
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
@@ -113,5 +113,6 @@ class BasicClassification(L.LightningModule):
                     schedulers=[warmup_scheduler, main_scheduler, last_scheduler],
                     milestones=[warmup_epochs, main_epochs + warmup_epochs],
                 ),
+                "monitor": "val/loss",
             },
         }

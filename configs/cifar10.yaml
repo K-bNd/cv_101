@@ -11,5 +11,5 @@ rand_augment: True
 num_workers: 4
 optimizer: "SGD"
 optimizer_params: {'momentum': 0.9, "weight_decay": 0.0001}
-last_lr_scheduler: 'cosine'
+last_lr_scheduler: 'plateau'
 lr_scheduler_params: {'T_0': 100}
