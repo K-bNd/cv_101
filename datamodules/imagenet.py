@@ -66,8 +66,7 @@ class ImageNetDataModule(L.LightningDataModule):
         self.test_transform = v2.Compose(
             [
                 v2.ToImage(),
-                v2.Resize((256, 256)),
-                v2.RandomCrop((config.val_res, config.val_res)),
+                v2.Resize((config.val_res, config.val_res)),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
             ]

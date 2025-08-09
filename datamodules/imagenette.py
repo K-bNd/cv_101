@@ -12,16 +12,26 @@ class ImagenetteDataModule(L.LightningDataModule):
         super().__init__()
         self.data_dir = data_dir
         self.config = config
-        self.transform = v2.Compose(
+        self.train_transform = v2.Compose(
             [
                 v2.ToImage(),
-                v2.Resize(config.image_size),
+                v2.Resize((256, 256)),
+                v2.RandomCrop((config.image_size, config.image_size)),
                 (
                     v2.AutoAugment(v2.AutoAugmentPolicy.IMAGENET)
                     if config.auto_augment
                     else v2.Identity()
                 ),
                 v2.RandAugment() if config.rand_augment else v2.Identity(),
+                v2.ToDtype(torch.float32, scale=True),
+                v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ]
+        )
+
+        self.test_transform = v2.Compose(
+            [
+                v2.ToImage(),
+                v2.Resize((256, 256)),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ]
@@ -36,7 +46,7 @@ class ImagenetteDataModule(L.LightningDataModule):
         # Assign train/val datasets for use in dataloaders
         if stage == "fit":
             imagenette_full = Imagenette(
-                self.data_dir, split="train", download=False, transform=self.transform
+                self.data_dir, split="train", download=False, transform=self.train_transform
             )
             self.train_dataset, self.val_dataset = random_split(
                 imagenette_full, [0.9, 0.1], generator=torch.Generator().manual_seed(42)
@@ -45,7 +55,7 @@ class ImagenetteDataModule(L.LightningDataModule):
         # Assign test dataset for use in dataloader(s)
         if stage == "test":
             self.test_dataset = Imagenette(
-                self.data_dir, split="val", download=False, transform=self.transform
+                self.data_dir, split="val", download=False, transform=self.test_transform
             )
 
     def train_dataloader(self):

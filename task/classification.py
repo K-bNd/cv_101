@@ -86,9 +86,9 @@ class BasicClassification(L.LightningModule):
         optimizer = getattr(optim, self.config.optimizer)(
             self.parameters(), lr=self.config.start_lr, **self.config.optimizer_params
         )
-        warmup_epochs = int(self.config.epochs * 0.05)
-        main_epochs = int(self.config.epochs * 0.55)
-        final_epochs = int(self.config.epochs * 0.4)
+        warmup_epochs = int(self.config.epochs * 0.1)
+        main_epochs = int(self.config.epochs * 0.3)
+        final_epochs = int(self.config.epochs * 0.6)
         warmup_scheduler = optim.lr_scheduler.LinearLR(
             optimizer=optimizer, start_factor=1e-4, total_iters=warmup_epochs
         )
