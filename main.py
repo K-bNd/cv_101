@@ -8,7 +8,8 @@ from datamodules import (
     OxfordIITDataModule,
     ImagenetteDataModule,
     ImageNetDataModule,
-    VOCSegmentationDataModule
+    VOCSegmentationDataModule,
+    NuImagesDataModule
 )
 import lightning as L
 import torch.nn as nn
