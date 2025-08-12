@@ -1,9 +1,9 @@
-from typing import Literal
+from typing import Literal, Union
 from pydantic import BaseModel
 
 
 class TrainConfig(BaseModel):
-    image_size: int = 224
+    image_size: Union[int, list[int]] = 224
     num_classes: int = 10
     in_channels: int = 3
     batch_size: int = 512
