@@ -28,7 +28,7 @@ from yaml import load, FullLoader
 
 def pick_dataset(
     dataset: str, config: TrainConfig | ImageNetTrainConfig | BiSeNetV2TrainConfig
-) -> tuple[L.LightningDataModule, Literal["classification", "segmentation"]]:
+) -> tuple[L.LightningDataModule, Literal["classification", "segmentation", "object_detection"]]:
     """Init datamodule based on the dataset name
     Args:
         dataset (str): The name of the dataset
@@ -53,6 +53,15 @@ def pick_dataset(
         case "voc_seg":
             datamodule = VOCSegmentationDataModule(config=config)
             task_type = "segmentation"
+        case "nuimages_sem_seg":
+            datamodule = NuImagesDataModule(config, task='semantic_segmentation')
+            task_type = "segmentation"
+        case "nuimages_ins_seg":
+            datamodule = NuImagesDataModule(config, task='instance_segmentation')
+            task_type = "segmentation"
+        case "nuimages_obj_det":
+            datamodule = NuImagesDataModule(config, task='object_detection')
+            task_type = 'object_detection'
         case _:
             raise NotImplementedError(
                 "The chosen dataset is invalid, please choose from the following: cifar10, imagenette, mnist, oxford"
