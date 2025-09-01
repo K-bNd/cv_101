@@ -2,15 +2,16 @@ image_size: 224
 num_classes: 1000
 in_channels: 3
 batch_size: 512
+base_batch_size: 256
 start_lr: 0.2
+base_lr: 0.1
 epochs: 120
-auto_augment: True
-rand_augment: True
+trivial_augment: True
 early_stopping: False
 early_stopping_patience: 5
 num_workers: 4
 optimizer: "SGD"
 optimizer_params: {'momentum': 0.9, "weight_decay": 0.0001}
 last_lr_scheduler: 'step'
-train_res: 224
+train_res: 176
 val_res: 224

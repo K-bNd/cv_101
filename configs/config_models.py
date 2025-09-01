@@ -8,6 +8,8 @@ class TrainConfig(BaseModel):
     in_channels: int = 3
     batch_size: int = 512
     start_lr: float = 1e-3
+    base_lr: float = 0.1
+    base_batch_size: int = 256
     epochs: int = 300
     early_stopping: bool = False
     early_stopping_patience: int = 5
