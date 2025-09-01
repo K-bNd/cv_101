@@ -44,12 +44,7 @@ class ImageNetDataModule(L.LightningDataModule):
                 v2.ToImage(),
                 v2.Resize((256, 256)),
                 v2.RandomCrop((config.train_res, config.train_res)),
-                (
-                    v2.AutoAugment(v2.AutoAugmentPolicy.IMAGENET)
-                    if config.auto_augment
-                    else v2.Identity()
-                ),
-                v2.RandAugment() if config.rand_augment else v2.Identity(),
+                v2.TrivialAugmentWide() if config.trivial_augment else v2.Identity(),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
             ]

@@ -18,8 +18,7 @@ class CIFAR10DataModule(L.LightningDataModule):
             [
                 v2.ToImage(),
                 v2.RandomCrop(config.image_size, padding=4),
-                v2.AutoAugment(v2.AutoAugmentPolicy.CIFAR10, interpolation=InterpolationMode.BILINEAR) if config.auto_augment else v2.Identity(),
-                v2.RandAugment(interpolation=InterpolationMode.BILINEAR) if config.rand_augment else v2.Identity(),
+                v2.TrivialAugmentWide() if config.trivial_augment else v2.Identity(),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(
                     mean=CIFAR10_MEAN, std=CIFAR10_STD
