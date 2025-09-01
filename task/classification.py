@@ -86,31 +86,30 @@ class BasicClassification(L.LightningModule):
         optimizer = getattr(optim, self.config.optimizer)(
             self.parameters(), lr=self.config.start_lr, **self.config.optimizer_params
         )
-        warmup_epochs = int(self.config.epochs * 0.1)
-        main_epochs = int(self.config.epochs * 0.3)
-        final_epochs = int(self.config.epochs * 0.6)
+        warmup_epochs = min(int(self.config.epochs * 0.1), 5)
+        main_epochs = self.config.epochs - warmup_epochs
         warmup_scheduler = optim.lr_scheduler.LinearLR(
             optimizer=optimizer, start_factor=1e-4, total_iters=warmup_epochs
         )
-        main_scheduler = optim.lr_scheduler.ConstantLR(
-            optimizer=optimizer, factor=1.0, total_iters=main_epochs
-        )
         
-        match self.config.last_lr_scheduler:
+        match self.config.lr_scheduler:
             case "cosine":
-                last_scheduler = optim.lr_scheduler.CosineAnnealingLR(
-                    optimizer=optimizer, T_max=final_epochs
+                main_scheduler = optim.lr_scheduler.CosineAnnealingLR(
+                    optimizer=optimizer, T_max=main_epochs
                 )
             case "step":
-                last_scheduler = optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=final_epochs // 3)
+                main_scheduler = optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=main_epochs // 3)
+
+        scheduler = optim.lr_scheduler.SequentialLR(
+                    optimizer=optimizer,
+                    schedulers=[warmup_scheduler, main_scheduler],
+                    milestones=[warmup_epochs],
+        )
+
         return {
             "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": optim.lr_scheduler.SequentialLR(
-                    optimizer=optimizer,
-                    schedulers=[warmup_scheduler, main_scheduler, last_scheduler],
-                    milestones=[warmup_epochs, main_epochs + warmup_epochs],
-                ),
+            "lr_scheduler":{
+                "scheduler": scheduler,
                 "monitor": "val/loss",
             },
         }
