@@ -12,11 +12,10 @@ class TrainConfig(BaseModel):
     early_stopping: bool = False
     early_stopping_patience: int = 5
     num_workers: int = 4
-    auto_augment: bool = False
-    rand_augment: bool = False
+    trivial_augment: bool = True
     optimizer: Literal["Adam", "AdamW", "SGD"] = "Adam"
     optimizer_params: dict = {}
-    last_lr_scheduler: Literal["step", "cosine"] = 'cosine'
+    lr_scheduler: Literal["step", "cosine"] = 'cosine'
     lr_scheduler_params: dict = {}
     ignore_index: int = 255
 

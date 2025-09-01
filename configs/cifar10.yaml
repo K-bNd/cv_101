@@ -3,12 +3,11 @@ num_classes: 10
 in_channels: 3
 batch_size: 128
 start_lr: 0.1
-epochs: 200
+epochs: 180
 early_stopping: False
 early_stopping_patience: 10
-auto_augment: True
-rand_augment: True
+trivial_augment: True
 num_workers: 4
 optimizer: "SGD"
 optimizer_params: {'momentum': 0.9, "weight_decay": 0.0001}
-last_lr_scheduler: 'step'
+lr_scheduler: 'cosine'
