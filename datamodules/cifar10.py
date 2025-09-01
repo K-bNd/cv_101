@@ -23,6 +23,7 @@ class CIFAR10DataModule(L.LightningDataModule):
                 v2.Normalize(
                     mean=CIFAR10_MEAN, std=CIFAR10_STD
                 ),
+                v2.RandomErasing(p=0.1)
             ])
 
         self.test_transform = v2.Compose(
