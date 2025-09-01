@@ -59,11 +59,13 @@ class ResidualBlock(nn.Module):
         else:
             self.shortcut = (
                 nn.Sequential(
+                    # tweak from 1812.01187
+                    nn.AvgPool2d(kernel_size=2, stride=2),
                     *create_conv_block(
                         in_channels=in_channels,
                         out_channels=out_channels,
                         kernel_size=1,
-                        stride=2,
+                        stride=1,
                         relu=False
                     )
                 )
@@ -109,11 +111,13 @@ class BottleneckBlock(nn.Module):
         super(BottleneckBlock, self).__init__()
         self.shortcut = (
             nn.Sequential(
+                # tweak from 1812.01187
+                nn.AvgPool2d(kernel_size=2, stride=2),
                 *create_conv_block(
                     in_channels=in_channels,
                     out_channels=out_channels,
                     kernel_size=1,
-                    stride=2,
+                    stride=1,
                     relu=False
                 )
             )
