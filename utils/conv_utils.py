@@ -112,7 +112,7 @@ class BottleneckBlock(nn.Module):
         self.shortcut = (
             nn.Sequential(
                 # tweak from 1812.01187
-                nn.AvgPool2d(kernel_size=2, stride=2),
+                nn.AvgPool2d(kernel_size=2, stride=2, padding=0, ceil_mode=True),
                 *create_conv_block(
                     in_channels=in_channels,
                     out_channels=out_channels,
@@ -151,7 +151,10 @@ class BottleneckBlock(nn.Module):
         )
 
     def forward(self, x: torch.Tensor):
-        return torch.nn.functional.relu(self.conv(x) + self.shortcut(x))
+        conv1 = self.conv(x)
+        shortcut1 = self.shortcut(x)
+        print(f"Conv shape: {conv1.shape}, {shortcut1.shape}")
+        return torch.nn.functional.relu(conv1 + shortcut1)
 
 # endregion
 
