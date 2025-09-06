@@ -8,6 +8,7 @@ Model Roadmap:
 - [X] Deep CNN with skipped connections (ResNet-50)
 - [X] SegNet
 - [X] BiSeNet V2
+- [ ] ConvNeXt
 - [ ] Basic ViT
 - [ ] DETR
 - [ ] LaViT
