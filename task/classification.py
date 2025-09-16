@@ -83,7 +83,7 @@ class BasicClassification(L.LightningModule):
         return acc
 
     def configure_optimizers(self):
-        start_lr = self.config.base_lr * self.config.batch_size / self.config.base_batch_size
+        start_lr = self.config.base_lr * self.config.batch_size / self.config.base_batch_size if self.config.linear_scaling_lr else self.config.start_lr
         optimizer = getattr(optim, self.config.optimizer)(
             self.parameters(), lr=start_lr, **self.config.optimizer_params
         )
