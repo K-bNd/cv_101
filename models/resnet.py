@@ -17,9 +17,10 @@ class ResNet50(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-classificati
                 kernel_size=7,
                 padding=3,
             ),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
             # endregion
             # region conv2_x (56x56)
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
+            # endregion
             BottleneckBlock(
                 in_channels=64, reduce_dim=64, out_channels=256, kernel_size=3, stride=2, padding=1
             ),
