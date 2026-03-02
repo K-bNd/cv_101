@@ -153,7 +153,6 @@ class BottleneckBlock(nn.Module):
     def forward(self, x: torch.Tensor):
         conv1 = self.conv(x)
         shortcut1 = self.shortcut(x)
-        print(f"Conv shape: {conv1.shape}, {shortcut1.shape}")
         return torch.nn.functional.relu(conv1 + shortcut1)
 
 # endregion
@@ -444,3 +443,73 @@ class GatherExpansionBlock(nn.Module):
 
 
 # endregion
+
+# region ConvNeXt
+
+class ConvNeXtBlock(nn.Module):
+    """New bottleneck block architecture from ConvNeXt
+    - Depthwise conv blocks
+    - GELU instead of ReLU
+    - LayerNorm instead of BatchNorm
+    - Inverted Bottleneck
+    """
+    def __init__(
+        self,
+        in_channels: int,
+        reduce_dim: int,
+        out_channels: int,
+        kernel_size: int,
+        stride: int,
+        padding: Union[int, str] = 0,
+    ):
+        """Residual learning block (ConvNeXt-50/101/152) from the ConvNeXt paper
+        - 1×1 convolution that reduces the channel dimension (serving as a "bottleneck")
+        - 3×3 convolution that operates on this reduced channel space
+        - 1×1 convolution that expands the channels back to a higher dimension
+        """
+        super(ConvNeXtBlock, self).__init__()
+        self.shortcut = (
+            nn.Sequential(
+                # tweak from 1812.01187
+                nn.AvgPool2d(kernel_size=2, stride=2, padding=0, ceil_mode=True),
+                *create_conv_block(
+                    in_channels=in_channels,
+                    out_channels=out_channels,
+                    kernel_size=1,
+                    stride=1,
+                    relu=False
+                )
+            )
+            if in_channels != out_channels
+            else nn.Identity()
+        )
+        self.conv = nn.Sequential(
+            # reduce dimension from in_channels to desired_in_channels
+            *create_conv_block(
+                in_channels=in_channels,
+                out_channels=reduce_dim,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+            ),
+            *create_conv_block(
+                in_channels=reduce_dim,
+                out_channels=reduce_dim,
+                kernel_size=kernel_size,
+                stride=stride,
+                padding=padding,
+            ),
+            *create_conv_block(
+                in_channels=reduce_dim,
+                out_channels=out_channels,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                relu=False
+            ),
+        )
+
+    def forward(self, x: torch.Tensor):
+        conv1 = self.conv(x)
+        shortcut1 = self.shortcut(x)
+        return torch.nn.functional.relu(conv1 + shortcut1)
