@@ -44,6 +44,7 @@ class ImageNetDataModule(L.LightningDataModule):
                 v2.ToImage(),
                 v2.Resize((256, 256)),
                 v2.RandomCrop((config.train_res, config.train_res)),
+                v2.RandomHorizontalFlip(),
                 v2.TrivialAugmentWide() if config.trivial_augment else v2.Identity(),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
@@ -54,7 +55,7 @@ class ImageNetDataModule(L.LightningDataModule):
             [
                 v2.ToImage(),
                 v2.Resize((256, 256)),
-                v2.RandomCrop((config.val_res, config.val_res)),
+                v2.CenterCrop((config.val_res, config.val_res)),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
             ]
