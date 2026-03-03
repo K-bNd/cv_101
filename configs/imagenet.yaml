@@ -1,11 +1,11 @@
 image_size: 224
 num_classes: 1000
 in_channels: 3
-batch_size: 512
+batch_size: 1024
 base_batch_size: 256
-start_lr: 0.2
+linear_scaling_lr: True
 base_lr: 0.1
-epochs: 120
+epochs: 300
 trivial_augment: True
 early_stopping: False
 early_stopping_patience: 5
