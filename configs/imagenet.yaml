@@ -1,11 +1,11 @@
 image_size: 224
 num_classes: 1000
 in_channels: 3
-batch_size: 512
+batch_size: 1024
 base_batch_size: 256
-start_lr: 0.2
+linear_scaling_lr: True
 base_lr: 0.1
-epochs: 120
+epochs: 300
 trivial_augment: True
 early_stopping: False
 early_stopping_patience: 5
@@ -15,3 +15,6 @@ optimizer_params: {'momentum': 0.9, "weight_decay": 0.0001}
 last_lr_scheduler: 'step'
 train_res: 176
 val_res: 224
+label_smoothing: 0.1
+mixup_alpha: 0.2
+cutmix_alpha: 1.0

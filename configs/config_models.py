@@ -21,10 +21,13 @@ class TrainConfig(BaseModel):
     lr_scheduler: Literal["step", "cosine"] = 'cosine'
     lr_scheduler_params: dict = {}
     ignore_index: int = 255
+    label_smoothing: float = 0.0
 
 class ImageNetTrainConfig(TrainConfig):
     train_res: int = 224
     val_res: int = 224
+    mixup_alpha: float = 0.0
+    cutmix_alpha: float = 0.0
 
 class BiSeNetV2TrainConfig(TrainConfig):
     seg_heads_loss_weight: float = 0.4
