@@ -1,7 +1,8 @@
 from typing import Union
+
 import torch
-import torch.nn.functional as F
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 def create_conv_block(
@@ -32,14 +33,19 @@ def create_conv_block(
 
 # region ResNet
 
+
 class ManualDownsamplingLayer(nn.Module):
     """Parameter-free downsampling"""
+
     def __init__(self, channels: int):
         super(ManualDownsamplingLayer, self).__init__()
-        self.downsample_func = lambda x: F.pad(x[:, :, ::2, ::2], (0, 0, 0, 0, channels//4, channels//4), "constant", 0)
+        self.downsample_func = lambda x: F.pad(
+            x[:, :, ::2, ::2], (0, 0, 0, 0, channels // 4, channels // 4), "constant", 0
+        )
 
     def forward(self, x: torch.Tensor):
         return self.downsample_func(x)
+
 
 class ResidualBlock(nn.Module):
     """Residual learning block (ResNet-34) from the ResNet paper"""
@@ -51,11 +57,15 @@ class ResidualBlock(nn.Module):
         kernel_size: int,
         stride: int,
         padding: Union[int, str] = 0,
-        identity_shortcut: bool = False
+        identity_shortcut: bool = False,
     ):
         super(ResidualBlock, self).__init__()
         if identity_shortcut:
-            self.shortcut = ManualDownsamplingLayer(out_channels) if in_channels != out_channels or stride != 1 else nn.Identity()
+            self.shortcut = (
+                ManualDownsamplingLayer(out_channels)
+                if in_channels != out_channels or stride != 1
+                else nn.Identity()
+            )
         else:
             self.shortcut = (
                 nn.Sequential(
@@ -66,8 +76,8 @@ class ResidualBlock(nn.Module):
                         out_channels=out_channels,
                         kernel_size=1,
                         stride=1,
-                        relu=False
-                    )
+                        relu=False,
+                    ),
                 )
                 if in_channels != out_channels or stride != 1
                 else nn.Identity()
@@ -86,12 +96,13 @@ class ResidualBlock(nn.Module):
                 kernel_size=kernel_size,
                 stride=1,
                 padding=padding,
-                relu=False
+                relu=False,
             ),
         )
 
     def forward(self, x: torch.Tensor):
         return torch.nn.functional.relu(self.conv(x) + self.shortcut(x))
+
 
 class BottleneckBlock(nn.Module):
     def __init__(
@@ -118,8 +129,8 @@ class BottleneckBlock(nn.Module):
                     out_channels=out_channels,
                     kernel_size=1,
                     stride=1,
-                    relu=False
-                )
+                    relu=False,
+                ),
             )
             if in_channels != out_channels
             else nn.Identity()
@@ -146,7 +157,7 @@ class BottleneckBlock(nn.Module):
                 kernel_size=1,
                 stride=1,
                 padding=0,
-                relu=False
+                relu=False,
             ),
         )
 
@@ -155,19 +166,39 @@ class BottleneckBlock(nn.Module):
         shortcut1 = self.shortcut(x)
         return torch.nn.functional.relu(conv1 + shortcut1)
 
+
 # endregion
 
 # region BiSeNetV2
 
+
 class SegmentationHead(nn.Module):
-    def __init__(self, in_channels: int, scale_factor: int, hidden_channels: int = 128, num_classes: int = 3):
+    def __init__(
+        self,
+        in_channels: int,
+        scale_factor: int,
+        hidden_channels: int = 128,
+        num_classes: int = 3,
+    ):
         super(SegmentationHead, self).__init__()
-        self.upsample = nn.Upsample(scale_factor=scale_factor, mode='bilinear', align_corners=True)
-        self.conv = nn.Sequential(
-            *create_conv_block(in_channels, hidden_channels, kernel_size=3, stride=1, padding=1),
-            *create_conv_block(hidden_channels, num_classes, kernel_size=1, stride=1, padding=0, batch_norm=False, relu=False)
+        self.upsample = nn.Upsample(
+            scale_factor=scale_factor, mode="bilinear", align_corners=True
         )
-    
+        self.conv = nn.Sequential(
+            *create_conv_block(
+                in_channels, hidden_channels, kernel_size=3, stride=1, padding=1
+            ),
+            *create_conv_block(
+                hidden_channels,
+                num_classes,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                batch_norm=False,
+                relu=False,
+            ),
+        )
+
     def forward(self, x: torch.Tensor):
         x1 = self.conv(x)
         return self.upsample(x1)
@@ -219,7 +250,7 @@ class BilateralGuidedAggregation(nn.Module):
                 padding=1,
                 relu=False,
             ),
-            nn.Upsample(scale_factor=4, align_corners=True, mode='bilinear'),
+            nn.Upsample(scale_factor=4, align_corners=True, mode="bilinear"),
             nn.Sigmoid(),
         )
         self.conv_4 = nn.Sequential(
@@ -256,7 +287,7 @@ class BilateralGuidedAggregation(nn.Module):
         x5 = x1 * x3  # 𝐻 × 𝑊 × 𝐶
         x6 = x2 * x4  # 𝐻 / 4 × 𝑊 / 4 × 𝐶
 
-        return x5 + nn.Upsample(scale_factor=4, align_corners=True, mode='bilinear')(x6)
+        return x5 + nn.Upsample(scale_factor=4, align_corners=True, mode="bilinear")(x6)
 
 
 class StemBlock(nn.Module):
