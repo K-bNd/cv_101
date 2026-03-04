@@ -110,7 +110,9 @@ class BasicClassification(L.LightningModule):
         warmup_epochs = min(int(self.config.epochs * 0.1), 5)
         main_epochs = self.config.epochs - warmup_epochs
         warmup_scheduler = optim.lr_scheduler.LinearLR(
-            optimizer=optimizer, start_factor=1e-2, total_iters=warmup_epochs
+            optimizer=optimizer,
+            start_factor=1 / warmup_epochs,
+            total_iters=warmup_epochs,
         )
 
         match self.config.lr_scheduler:
