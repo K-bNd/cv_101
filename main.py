@@ -16,6 +16,7 @@ from datamodules import (
 from models import (
     VGG16,
     BiSeNetV2,
+    ConvNeXt,
     LeNet,
     ResNet34,
     ResNet50,
@@ -123,6 +124,8 @@ def pick_model(model: str, in_channels: int, num_classes: int) -> nn.Module:
             return cifar_resnet110(in_channels, num_classes)
         case "cifar_resnet_1202":
             return cifar_resnet1202(in_channels, num_classes)
+        case "convnext":
+            return ConvNeXt(in_channels, num_classes)
         case _:
             raise NotImplementedError(
                 "The chosen model is invalid, please choose from the following: lenet, basic_nn, vgg16, segnet, resnet34, resnet50, cifar_resnet_{20, 32, 44, 56, 110, 1202}"

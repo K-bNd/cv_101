@@ -5,3 +5,4 @@ from .segnet import SegNet
 from .resnet import ResNet34, ResNet50
 from .cifar_resnet import cifar_resnet20, cifar_resnet32, cifar_resnet44, cifar_resnet56, cifar_resnet110, cifar_resnet1202
 from .bisenet_v2 import BiSeNetV2
+from .convnext import ConvNeXt

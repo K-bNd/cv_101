@@ -3,6 +3,7 @@ from typing import Union
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from timm.layers import DropPath
 
 
 def create_conv_block(
@@ -478,69 +479,49 @@ class GatherExpansionBlock(nn.Module):
 # region ConvNeXt
 
 class ConvNeXtBlock(nn.Module):
-    """New bottleneck block architecture from ConvNeXt
-    - Depthwise conv blocks
-    - GELU instead of ReLU
-    - LayerNorm instead of BatchNorm
-    - Inverted Bottleneck
-    """
-    def __init__(
-        self,
-        in_channels: int,
-        reduce_dim: int,
-        out_channels: int,
-        kernel_size: int,
-        stride: int,
-        padding: Union[int, str] = 0,
-    ):
-        """Residual learning block (ConvNeXt-50/101/152) from the ConvNeXt paper
-        - 1×1 convolution that reduces the channel dimension (serving as a "bottleneck")
-        - 3×3 convolution that operates on this reduced channel space
-        - 1×1 convolution that expands the channels back to a higher dimension
-        """
-        super(ConvNeXtBlock, self).__init__()
-        self.shortcut = (
-            nn.Sequential(
-                # tweak from 1812.01187
-                nn.AvgPool2d(kernel_size=2, stride=2, padding=0, ceil_mode=True),
-                *create_conv_block(
-                    in_channels=in_channels,
-                    out_channels=out_channels,
-                    kernel_size=1,
-                    stride=1,
-                    relu=False
-                )
-            )
-            if in_channels != out_channels
-            else nn.Identity()
-        )
-        self.conv = nn.Sequential(
-            # reduce dimension from in_channels to desired_in_channels
-            *create_conv_block(
-                in_channels=in_channels,
-                out_channels=reduce_dim,
-                kernel_size=1,
-                stride=1,
-                padding=0,
-            ),
-            *create_conv_block(
-                in_channels=reduce_dim,
-                out_channels=reduce_dim,
-                kernel_size=kernel_size,
-                stride=stride,
-                padding=padding,
-            ),
-            *create_conv_block(
-                in_channels=reduce_dim,
-                out_channels=out_channels,
-                kernel_size=1,
-                stride=1,
-                padding=0,
-                relu=False
-            ),
-        )
+    """Inverted bottleneck block from ConvNeXt (arXiv:2201.03545).
 
-    def forward(self, x: torch.Tensor):
-        conv1 = self.conv(x)
-        shortcut1 = self.shortcut(x)
-        return torch.nn.functional.relu(conv1 + shortcut1)
+    Architecture (channel-last for norm/MLP):
+        DWConv(7×7, groups=C) → LayerNorm(C) → Linear(C→4C) → GELU → Linear(4C→C)
+        → layer_scale → drop_path → +x
+    """
+
+    def __init__(self, dim: int, drop_path_rate: float = 0.0):
+        super(ConvNeXtBlock, self).__init__()
+        self.dwconv = nn.Conv2d(dim, dim, kernel_size=7, padding=3, groups=dim)
+        self.norm = nn.LayerNorm(normalized_shape=[dim])
+        self.pwconv1 = nn.Linear(dim, 4 * dim)
+        self.act = nn.GELU()
+        self.pwconv2 = nn.Linear(4 * dim, dim)
+        self.layer_scale = nn.Parameter(torch.ones(dim) * 1e-6)
+        self.drop_path = DropPath(drop_path_rate) if drop_path_rate > 0.0 else nn.Identity()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        residual = x
+        x = self.dwconv(x)
+        x = x.permute(0, 2, 3, 1)  # (N,C,H,W) → (N,H,W,C)
+        x = self.norm(x)
+        x = self.pwconv1(x)
+        x = self.act(x)
+        x = self.pwconv2(x)
+        x = self.layer_scale * x
+        x = x.permute(0, 3, 1, 2)  # (N,H,W,C) → (N,C,H,W)
+        return self.drop_path(x) + residual
+
+
+class ConvNeXtDownsample(nn.Module):
+    """Spatial downsampling between ConvNeXt stages.
+
+    LayerNorm (channel-last) → Conv2d(k=2, s=2) halves spatial dims and projects channels.
+    """
+
+    def __init__(self, in_channels: int, out_channels: int):
+        super(ConvNeXtDownsample, self).__init__()
+        self.norm = nn.LayerNorm(normalized_shape=[in_channels])
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=2, stride=2)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x.permute(0, 2, 3, 1)  # (N,C,H,W) → (N,H,W,C)
+        x = self.norm(x)
+        x = x.permute(0, 3, 1, 2)  # (N,H,W,C) → (N,C,H,W)
+        return self.conv(x)
