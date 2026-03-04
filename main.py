@@ -1,34 +1,60 @@
 from typing import Literal
-from models.cifar_resnet import cifar_resnet1202
-from task import BasicClassification, BasicSegmentation, BiSeNetV2Segmentation
-from models import LeNet, BasicNN, VGG16, SegNet, ResNet34, ResNet50, BiSeNetV2, cifar_resnet20, cifar_resnet32, cifar_resnet44, cifar_resnet56, cifar_resnet110
+
+import lightning as L
+import torch
+import torch.nn as nn
+
 from datamodules import (
     CIFAR10DataModule,
-    MNISTDataModule,
-    OxfordIITDataModule,
-    ImagenetteDataModule,
     ImageNetDataModule,
+    ImagenetteDataModule,
+    MNISTDataModule,
+    NuImagesDataModule,
+    OxfordIITDataModule,
     VOCSegmentationDataModule,
-    NuImagesDataModule
 )
-import lightning as L
-import torch.nn as nn
-from lightning.pytorch.loggers import WandbLogger
+from models import (
+    VGG16,
+    BiSeNetV2,
+    LeNet,
+    ResNet34,
+    ResNet50,
+    SegNet,
+    cifar_resnet20,
+    cifar_resnet32,
+    cifar_resnet44,
+    cifar_resnet56,
+    cifar_resnet110,
+)
+from models.cifar_resnet import cifar_resnet1202
+from task import BasicClassification, BasicSegmentation, BiSeNetV2Segmentation
+
+if torch.cuda.is_available():
+    capability = torch.cuda.get_device_capability()[0]
+    if capability >= 9:  # Hopper / Blackwell — BF16 Tensor Cores
+        torch.set_float32_matmul_precision("medium")
+    elif capability >= 8:  # Ampere — TF32 Tensor Cores
+        torch.set_float32_matmul_precision("high")
+    # else: Pascal/Volta/Turing — no TF32, keep default "highest"
+from argparse import ArgumentParser
+
 from lightning.pytorch.callbacks import (
-    EarlyStopping,
     Callback,
+    EarlyStopping,
     LearningRateMonitor,
     ModelCheckpoint,
-    OnExceptionCheckpoint,
 )
-from argparse import ArgumentParser
-from configs import TrainConfig, ImageNetTrainConfig, BiSeNetV2TrainConfig
-from yaml import load, FullLoader
+from lightning.pytorch.loggers import WandbLogger
+from yaml import FullLoader, load
+
+from configs import BiSeNetV2TrainConfig, ImageNetTrainConfig, TrainConfig
 
 
 def pick_dataset(
     dataset: str, config: TrainConfig | ImageNetTrainConfig | BiSeNetV2TrainConfig
-) -> tuple[L.LightningDataModule, Literal["classification", "segmentation", "object_detection"]]:
+) -> tuple[
+    L.LightningDataModule, Literal["classification", "segmentation", "object_detection"]
+]:
     """Init datamodule based on the dataset name
     Args:
         dataset (str): The name of the dataset
@@ -54,14 +80,14 @@ def pick_dataset(
             datamodule = VOCSegmentationDataModule(config=config)
             task_type = "segmentation"
         case "nuimages_sem_seg":
-            datamodule = NuImagesDataModule(config, task='semantic_segmentation')
+            datamodule = NuImagesDataModule(config, task="semantic_segmentation")
             task_type = "segmentation"
         case "nuimages_ins_seg":
-            datamodule = NuImagesDataModule(config, task='instance_segmentation')
+            datamodule = NuImagesDataModule(config, task="instance_segmentation")
             task_type = "segmentation"
         case "nuimages_obj_det":
-            datamodule = NuImagesDataModule(config, task='object_detection')
-            task_type = 'object_detection'
+            datamodule = NuImagesDataModule(config, task="object_detection")
+            task_type = "object_detection"
         case _:
             raise NotImplementedError(
                 "The chosen dataset is invalid, please choose from the following: cifar10, imagenette, mnist, oxford"
@@ -79,7 +105,7 @@ def pick_model(model: str, in_channels: int, num_classes: int) -> nn.Module:
             return VGG16(num_classes=num_classes)
         case "segnet":
             return SegNet(in_channels, num_classes)
-        case 'bisenetv2':
+        case "bisenetv2":
             return BiSeNetV2(in_channels, num_classes)
         case "resnet34":
             return ResNet34(in_channels, num_classes)
@@ -103,12 +129,14 @@ def pick_model(model: str, in_channels: int, num_classes: int) -> nn.Module:
             )
 
 
-def get_config(model: str, dataset: str) -> ImageNetTrainConfig | TrainConfig | BiSeNetV2TrainConfig:
+def get_config(
+    model: str, dataset: str
+) -> ImageNetTrainConfig | TrainConfig | BiSeNetV2TrainConfig:
     config_class = None
     match [dataset, model]:
         case ["imagenet", _]:
             config_class = ImageNetTrainConfig
-        case [_, 'bisenetv2']:
+        case [_, "bisenetv2"]:
             config_class = BiSeNetV2TrainConfig
         case _:
             config_class = TrainConfig
@@ -134,7 +162,7 @@ if __name__ == "__main__":
     match [task_type, args.model]:
         case ["classification", _]:
             task = BasicClassification(config)
-        case ['segmentation', 'bisenetv2']:
+        case ["segmentation", "bisenetv2"]:
             task = BiSeNetV2Segmentation(config)
         case ["segmentation", _]:
             task = BasicSegmentation(config)
