@@ -22,6 +22,7 @@ class TrainConfig(BaseModel):
     lr_scheduler_params: dict = {}
     ignore_index: int = 255
     label_smoothing: float = 0.0
+    gradient_clip_val: float = 0.0
 
 class ImageNetTrainConfig(TrainConfig):
     train_res: int = 224
