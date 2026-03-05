@@ -1,4 +1,5 @@
 from typing import Literal, Union
+
 from pydantic import BaseModel
 
 
@@ -18,16 +19,19 @@ class TrainConfig(BaseModel):
     trivial_augment: bool = True
     optimizer: Literal["Adam", "AdamW", "SGD"] = "SGD"
     optimizer_params: dict = {}
-    lr_scheduler: Literal["step", "cosine"] = 'cosine'
+    lr_scheduler: Literal["step", "cosine"] = "cosine"
     lr_scheduler_params: dict = {}
     ignore_index: int = 255
     label_smoothing: float = 0.0
+    gradient_clip_val: float = 0.0
+
 
 class ImageNetTrainConfig(TrainConfig):
     train_res: int = 224
     val_res: int = 224
     mixup_alpha: float = 0.0
     cutmix_alpha: float = 0.0
+
 
 class BiSeNetV2TrainConfig(TrainConfig):
     seg_heads_loss_weight: float = 0.4

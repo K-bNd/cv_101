@@ -199,6 +199,7 @@ if __name__ == "__main__":
         logger=wandb_logger,
         callbacks=callbacks,
         log_every_n_steps=len(datamodule.train_dataloader()),
+        gradient_clip_val=config.gradient_clip_val,
     )
     trainer.fit(model=task, datamodule=datamodule)
     trainer.test(task, datamodule=datamodule)
