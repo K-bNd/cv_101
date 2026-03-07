@@ -6,6 +6,7 @@ from torchmetrics import Accuracy
 from torchvision.transforms import v2
 
 from configs.config_models import ImageNetTrainConfig, TrainConfig
+from models import ModelImplem
 
 
 class BasicClassification(L.LightningModule):
@@ -35,7 +36,9 @@ class BasicClassification(L.LightningModule):
             v2.RandomChoice(batch_transforms) if batch_transforms else None
         )
 
-    def select_model(self, model: nn.Module, preprocessing: Optional[Callable] = None):
+    def select_model(
+        self, model: ModelImplem, preprocessing: Optional[Callable] = None
+    ):
         self.model = model
         self.model.train(True)
         self.preprocessing = preprocessing
