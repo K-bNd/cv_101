@@ -1,8 +1,10 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
+
+from .model import ModelImplem
 
 
-class BasicNN(nn.Module):
+class BasicNN(ModelImplem, pipeline_tag="image-classification"):
     def __init__(self, in_features: int, hidden_features: int, out_features: int):
         super().__init__()
         self.model = nn.Sequential(
@@ -15,3 +17,7 @@ class BasicNN(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
+
+    @staticmethod
+    def get_encoder_layer() -> nn.Sequential:
+        raise NotImplementedError("BasicNN has no separable encoder layer")

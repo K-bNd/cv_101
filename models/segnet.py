@@ -1,10 +1,16 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
+
 from utils import create_conv_block
-from huggingface_hub import PyTorchModelHubMixin
+
+from .model import ModelImplem
 
 
-class SegNet(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-segmentation", license="mit", tags=["arxiv:1511.00561"], repo_url="https://github.com/K-bNd/cv_101"):
+class SegNet(
+    ModelImplem,
+    pipeline_tag="image-segmentation",
+    tags=["arxiv:1511.00561"],
+):
     """SegNet Architecture"""
 
     def __init__(self, in_channels: int = 3, num_classes: int = 10):
@@ -244,3 +250,7 @@ class SegNet(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-segmentation",
 
         preds = self.softmax(x10)
         return preds
+
+    @staticmethod
+    def get_encoder_layer() -> nn.Sequential:
+        raise NotImplementedError("SegNet encoder is managed per-stage via conv1-conv5 attributes")

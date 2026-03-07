@@ -1,11 +1,13 @@
-from torch import optim, nn
+from typing import Callable, Literal, Optional
+
 import lightning as L
 import torch
-from typing import Callable, Literal, Optional
+from torch import nn, optim
 from torchmetrics import Accuracy
-from torchmetrics.segmentation import MeanIoU, GeneralizedDiceScore
+from torchmetrics.segmentation import GeneralizedDiceScore, MeanIoU
 
-from configs.config_models import TrainConfig, BiSeNetV2TrainConfig
+from configs.config_models import BiSeNetV2TrainConfig, TrainConfig
+from models import ModelImplem
 
 
 class BasicSegmentation(L.LightningModule):
@@ -30,7 +32,9 @@ class BasicSegmentation(L.LightningModule):
         self.config = config
         self.iou = MeanIoU(num_classes=config.num_classes, input_format=input_format)
         self.accuracy = Accuracy(
-            task="multiclass", num_classes=config.num_classes, ignore_index=config.ignore_index
+            task="multiclass",
+            num_classes=config.num_classes,
+            ignore_index=config.ignore_index,
         )
         # 255 is for ambiguous labels in VOC
         self.loss_fn = nn.CrossEntropyLoss(ignore_index=config.ignore_index)
@@ -38,7 +42,9 @@ class BasicSegmentation(L.LightningModule):
             num_classes=config.num_classes, input_format=input_format
         )
 
-    def select_model(self, model: nn.Module, postprocessing: Optional[Callable] = None):
+    def select_model(
+        self, model: ModelImplem, postprocessing: Optional[Callable] = None
+    ):
         self.model = model
         self.postprocessing = postprocessing
 
@@ -52,7 +58,9 @@ class BasicSegmentation(L.LightningModule):
         preds = self(x, inference=False)
         loss = self.loss_fn(preds, y)
         acc = self.accuracy(torch.argmax(preds, dim=1), y)
-        y = torch.where(y == self.config.ignore_index, 0., y).to(dtype=y.dtype) # current iou can't ignore a given index so we map to background
+        y = torch.where(y == self.config.ignore_index, 0.0, y).to(
+            dtype=y.dtype
+        )  # current iou can't ignore a given index so we map to background
         iou = self.iou(torch.argmax(preds, dim=1), y)
         self.log("train/loss", loss, prog_bar=True)
         self.log("train/acc", acc, prog_bar=True)
@@ -64,7 +72,9 @@ class BasicSegmentation(L.LightningModule):
         preds = self(x, inference=False)
         loss = self.loss_fn(preds, y)
         acc = self.accuracy(torch.argmax(preds, dim=1), y)
-        y = torch.where(y == self.config.ignore_index, 0., y).to(dtype=y.dtype) # current iou can't ignore a given index so we map to background
+        y = torch.where(y == self.config.ignore_index, 0.0, y).to(
+            dtype=y.dtype
+        )  # current iou can't ignore a given index so we map to background
         iou = self.iou(torch.argmax(preds, dim=1), y)
         self.log("test/loss", loss, prog_bar=True)
         self.log("test/acc", acc, prog_bar=True)
@@ -76,7 +86,9 @@ class BasicSegmentation(L.LightningModule):
         preds = self(x, inference=False)
         loss = self.loss_fn(preds, y)
         acc = self.accuracy(torch.argmax(preds, dim=1), y)
-        y = torch.where(y == self.config.ignore_index, 0., y).to(dtype=y.dtype) # current iou can't ignore a given index so we map to background
+        y = torch.where(y == self.config.ignore_index, 0.0, y).to(
+            dtype=y.dtype
+        )  # current iou can't ignore a given index so we map to background
         iou = self.iou(torch.argmax(preds, dim=1), y)
         self.log("val/loss", loss, prog_bar=True)
         self.log("val/acc", acc, prog_bar=True)
@@ -138,7 +150,9 @@ class BiSeNetV2Segmentation(BasicSegmentation):
             aux_loss += self.loss_fn(seg_head_preds, y)
         loss += self.config.seg_heads_loss_weight * aux_loss
         acc = self.accuracy(torch.argmax(preds, dim=1), y)
-        y = torch.where(y == self.config.ignore_index, 0., y).to(dtype=y.dtype) # current iou can't ignore a given index so we map to background
+        y = torch.where(y == self.config.ignore_index, 0.0, y).to(
+            dtype=y.dtype
+        )  # current iou can't ignore a given index so we map to background
         iou = self.iou(torch.argmax(preds, dim=1), y)
         self.log("train/loss", loss, prog_bar=True)
         self.log("train/acc", acc, prog_bar=True)
@@ -157,7 +171,9 @@ class BiSeNetV2Segmentation(BasicSegmentation):
             aux_loss += self.loss_fn(seg_head_preds, y)
         loss += self.config.seg_heads_loss_weight * aux_loss
         acc = self.accuracy(torch.argmax(preds, dim=1), y)
-        y = torch.where(y == self.config.ignore_index, 0., y).to(dtype=y.dtype) # current iou can't ignore a given index so we map to background
+        y = torch.where(y == self.config.ignore_index, 0.0, y).to(
+            dtype=y.dtype
+        )  # current iou can't ignore a given index so we map to background
         iou = self.iou(torch.argmax(preds, dim=1), y)
         self.log("test/loss", loss, prog_bar=True)
         self.log("test/acc", acc, prog_bar=True)
@@ -176,7 +192,9 @@ class BiSeNetV2Segmentation(BasicSegmentation):
             aux_loss += self.loss_fn(seg_head_preds, y)
         loss += self.config.seg_heads_loss_weight * aux_loss
         acc = self.accuracy(torch.argmax(preds, dim=1), y)
-        y = torch.where(y == self.config.ignore_index, 0., y).to(dtype=y.dtype) # current iou can't ignore a given index so we map to background
+        y = torch.where(y == self.config.ignore_index, 0.0, y).to(
+            dtype=y.dtype
+        )  # current iou can't ignore a given index so we map to background
         iou = self.iou(torch.argmax(preds, dim=1), y)
         self.log("val/loss", loss, prog_bar=True)
         self.log("val/acc", acc, prog_bar=True)

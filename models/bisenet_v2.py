@@ -1,27 +1,40 @@
-from typing import Union
 import torch
 import torch.nn as nn
+from pytorch_lightning import LightningModule
+
 from utils import (
-    create_conv_block,
-    GatherExpansionBlock,
-    StemBlock,
     BilateralGuidedAggregation,
     ContextEmbeddingBlock,
+    GatherExpansionBlock,
     SegmentationHead,
+    StemBlock,
+    create_conv_block,
 )
-from huggingface_hub import PyTorchModelHubMixin
+
+from .model import ModelImplem
 
 
-class SemanticBranch(nn.Module):
+class SemanticBranch(LightningModule):
     """Semantic Branch from the BiSeNetV2 paper"""
+
     def __init__(self, num_classes: int = 3, expansion_size: int = 6) -> None:
         super(SemanticBranch, self).__init__()
-        self.booster = nn.ModuleList([
-            SegmentationHead(in_channels=16, scale_factor=4, num_classes=num_classes),  # after stem block
-            SegmentationHead(in_channels=32, scale_factor=8, num_classes=num_classes),  # after S3
-            SegmentationHead(in_channels=64, scale_factor=16, num_classes=num_classes),  # after S4
-            SegmentationHead(in_channels=128, scale_factor=32, num_classes=num_classes),  # after S5-4
-        ])
+        self.booster = nn.ModuleList(
+            [
+                SegmentationHead(
+                    in_channels=16, scale_factor=4, num_classes=num_classes
+                ),  # after stem block
+                SegmentationHead(
+                    in_channels=32, scale_factor=8, num_classes=num_classes
+                ),  # after S3
+                SegmentationHead(
+                    in_channels=64, scale_factor=16, num_classes=num_classes
+                ),  # after S4
+                SegmentationHead(
+                    in_channels=128, scale_factor=32, num_classes=num_classes
+                ),  # after S5-4
+            ]
+        )
         self.s1_s2 = StemBlock(out_channels=16)
         self.s3 = nn.Sequential(
             GatherExpansionBlock(
@@ -67,7 +80,9 @@ class SemanticBranch(nn.Module):
         )
         self.s5_5 = ContextEmbeddingBlock(in_channels=128)
 
-    def forward(self, x: torch.Tensor, inference: bool = True) -> tuple[torch.Tensor, list[torch.Tensor]]:
+    def forward(
+        self, x: torch.Tensor, inference: bool = True
+    ) -> tuple[torch.Tensor, list[torch.Tensor]]:
         x1 = self.s1_s2(x)
         x2 = self.s3(x1)
         x3 = self.s4(x2)
@@ -85,12 +100,9 @@ class SemanticBranch(nn.Module):
 
 
 class BiSeNetV2(
-    nn.Module,
-    PyTorchModelHubMixin,
+    ModelImplem,
     pipeline_tag="image-segmentation",
-    license="mit",
     tags=["arxiv:2004.02147"],
-    repo_url="https://github.com/K-bNd/cv_101",
 ):
     """BiSeNetV2 architecture"""
 
@@ -107,7 +119,11 @@ class BiSeNetV2(
         self.detail_branch = nn.Sequential(
             # S-1
             *create_conv_block(
-                in_channels=in_channels, out_channels=64, kernel_size=3, stride=2, padding=1
+                in_channels=in_channels,
+                out_channels=64,
+                kernel_size=3,
+                stride=2,
+                padding=1,
             ),
             *create_conv_block(
                 in_channels=64,
@@ -137,15 +153,23 @@ class BiSeNetV2(
             ),
         )
 
-    def forward(self, x: torch.Tensor, inference: bool = True) -> tuple[torch.Tensor, list[torch.Tensor]]:
-        detail_output = self.detail_branch(x) # H/8 × W/8 x C
+    def forward(
+        self, x: torch.Tensor, inference: bool = True
+    ) -> tuple[torch.Tensor, list[torch.Tensor]]:
+        detail_output = self.detail_branch(x)  # H/8 × W/8 x C
         if inference:
-            semantic_output, _ = self.semantic_branch(x, inference) # H/32 x W/32 x C
-            x1 = self.bga(detail_output, semantic_output) # H/8 x W/8 x C
+            semantic_output, _ = self.semantic_branch(x, inference)  # H/32 x W/32 x C
+            x1 = self.bga(detail_output, semantic_output)  # H/8 x W/8 x C
 
             return self.final_segmentation_head(x1), []
         else:
-            semantic_output, seg_heads = self.semantic_branch.forward(x, inference) # H/32 x W/32 x C
-            x1 = self.bga(detail_output, semantic_output) # H/8 x W/8 x C
+            semantic_output, seg_heads = self.semantic_branch.forward(
+                x, inference
+            )  # H/32 x W/32 x C
+            x1 = self.bga(detail_output, semantic_output)  # H/8 x W/8 x C
 
             return self.final_segmentation_head(x1), seg_heads
+
+    @staticmethod
+    def get_encoder_layer() -> nn.Sequential:
+        raise NotImplementedError("BiSeNetV2 uses a dual-branch architecture; access detail_branch or semantic_branch directly")
