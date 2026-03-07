@@ -1,3 +1,4 @@
+from .model import ModelImplem
 from .basic_nn import BasicNN
 from .lenet import LeNet
 from .vgg16 import VGG16

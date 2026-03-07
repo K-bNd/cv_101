@@ -1,8 +1,10 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
+
+from .model import ModelImplem
 
 
-class LeNet(nn.Module):
+class LeNet(ModelImplem, pipeline_tag="image-classification"):
     """LeNet-5 Architecture"""
 
     def __init__(self, in_channels: int, num_classes: int = 10):
@@ -28,3 +30,14 @@ class LeNet(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.conv(x)
         return self.classifier(x)
+
+    @staticmethod
+    def get_encoder_layer() -> nn.Sequential:
+        return nn.Sequential(
+            nn.Conv2d(1, kernel_size=5, padding=2, out_channels=6),
+            nn.Sigmoid(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(in_channels=6, kernel_size=5, out_channels=16),
+            nn.Sigmoid(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+        )
