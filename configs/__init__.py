@@ -1,1 +1,1 @@
-from .config_models import TrainConfig, ImageNetTrainConfig, BiSeNetV2TrainConfig
+from .config_models import TrainConfig, ImageNetTrainConfig, BiSeNetV2TrainConfig, ViTTrainConfig
