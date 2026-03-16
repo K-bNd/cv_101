@@ -170,6 +170,5 @@ class BiSeNetV2(
 
             return self.final_segmentation_head(x1), seg_heads
 
-    @staticmethod
-    def get_encoder_layer() -> nn.Sequential:
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError("BiSeNetV2 uses a dual-branch architecture; access detail_branch or semantic_branch directly")

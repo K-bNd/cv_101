@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 from utils import ResidualBlock, create_conv_block
@@ -29,7 +30,7 @@ class CIFAR_ResNet(
         self.layer2 = self._make_layer(32, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(64, num_blocks[2], stride=2)
         self.pool = nn.AdaptiveAvgPool2d((1, 1))
-        self.classfier = nn.Sequential(
+        self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Linear(in_features=64, out_features=num_classes),
         )
@@ -58,12 +59,15 @@ class CIFAR_ResNet(
         out = self.layer2(out)
         out = self.layer3(out)
         pool = self.pool(out)
-        logits = self.classfier(pool)
+        logits = self.classifier(pool)
         return logits
 
-    @staticmethod
-    def get_encoder_layer() -> nn.Sequential:
-        raise NotImplementedError("CIFAR_ResNet encoder depends on num_blocks; use _make_layer instead")
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
+        out = self.conv1(x)
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        return self.pool(out)
 
 
 def cifar_resnet20(in_channels: int = 3, num_classes: int = 10):

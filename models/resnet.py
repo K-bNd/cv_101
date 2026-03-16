@@ -14,9 +14,9 @@ class ResNet50(
     def __init__(self, in_channels: int = 3, num_classes=10) -> None:
         super(ResNet50, self).__init__()
         self.num_classes = num_classes
-        self.encoder = ResNet50.get_encoder_layer(in_channels)
+        self.encoder = ResNet50._build_encoder(in_channels)
         self.pool = nn.AdaptiveAvgPool2d((1, 1))
-        self.classfier = nn.Sequential(
+        self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Linear(in_features=2048, out_features=1000),
             nn.Identity()
@@ -24,16 +24,14 @@ class ResNet50(
             else nn.Linear(in_features=1000, out_features=num_classes),
         )
 
-    def forward(self, x: torch.Tensor, encoding_only: bool = False):
-        enc = self.encoder(x)
-        pool = self.pool(enc)
-        logits = self.classfier(pool)
-        if encoding_only:
-            return torch.squeeze(pool)
-        return logits
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.classifier(self.pool(self.encoder(x)))
+
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
+        return self.pool(self.encoder(x))
 
     @staticmethod
-    def get_encoder_layer(in_channels: int = 3) -> nn.Sequential:
+    def _build_encoder(in_channels: int = 3) -> nn.Sequential:
         return nn.Sequential(
             # region conv1_x (112x112)
             *create_conv_block(
@@ -193,9 +191,9 @@ class ResNet34(
     def __init__(self, in_channels: int = 3, num_classes=10) -> None:
         super(ResNet34, self).__init__()
         self.num_classes = num_classes
-        self.encoder = ResNet34.get_encoder_layer(in_channels)
+        self.encoder = ResNet34._build_encoder(in_channels)
         self.pool = nn.AdaptiveAvgPool2d((1, 1))
-        self.classfier = nn.Sequential(
+        self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Linear(in_features=512, out_features=1000),
             nn.Identity()
@@ -203,16 +201,14 @@ class ResNet34(
             else nn.Linear(in_features=1000, out_features=num_classes),
         )
 
-    def forward(self, x: torch.Tensor, encoding_only: bool = False):
-        enc = self.encoder(x)
-        pool = self.pool(enc)
-        logits = self.classfier(pool)
-        if encoding_only:
-            return torch.squeeze(pool)
-        return logits
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.classifier(self.pool(self.encoder(x)))
+
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
+        return self.pool(self.encoder(x))
 
     @staticmethod
-    def get_encoder_layer(in_channels: int = 3) -> nn.Sequential:
+    def _build_encoder(in_channels: int = 3) -> nn.Sequential:
         return nn.Sequential(
             # region conv1_x
             *create_conv_block(

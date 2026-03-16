@@ -251,6 +251,5 @@ class SegNet(
         preds = self.softmax(x10)
         return preds
 
-    @staticmethod
-    def get_encoder_layer() -> nn.Sequential:
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError("SegNet encoder is managed per-stage via conv1-conv5 attributes")
