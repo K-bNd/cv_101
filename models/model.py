@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 
 import torch
-import torch.nn as nn
 from huggingface_hub import PyTorchModelHubMixin
 from pytorch_lightning import LightningModule
 
@@ -37,6 +36,5 @@ class ModelImplem(
     @abstractmethod
     def forward(self, x: torch.Tensor) -> torch.Tensor: ...
 
-    @staticmethod
     @abstractmethod
-    def get_encoder_layer() -> nn.Sequential: ...
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor: ...

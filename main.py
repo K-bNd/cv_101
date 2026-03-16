@@ -25,6 +25,10 @@ from models import (
     cifar_resnet44,
     cifar_resnet56,
     cifar_resnet110,
+    vit5_small,
+    vit5_base,
+    vit5_large,
+    vit5_xlarge,
 )
 from models.cifar_resnet import cifar_resnet1202
 from task import BasicClassification, BasicSegmentation, BiSeNetV2Segmentation
@@ -47,7 +51,7 @@ from lightning.pytorch.callbacks import (
 from lightning.pytorch.loggers import WandbLogger
 from yaml import FullLoader, load
 
-from configs import BiSeNetV2TrainConfig, ImageNetTrainConfig, TrainConfig
+from configs import BiSeNetV2TrainConfig, ImageNetTrainConfig, TrainConfig, ViTTrainConfig
 from utils.model_card import create_model_card
 
 
@@ -98,7 +102,7 @@ def pick_dataset(
     return datamodule, task_type
 
 
-def pick_model(model: str, in_channels: int, num_classes: int) -> ModelImplem:
+def pick_model(model: str, in_channels: int, num_classes: int, image_size: int = 224) -> ModelImplem:
     """Init model based on the model name"""
     match model:
         case "lenet":
@@ -125,6 +129,14 @@ def pick_model(model: str, in_channels: int, num_classes: int) -> ModelImplem:
             return cifar_resnet110(in_channels, num_classes)
         case "cifar_resnet_1202":
             return cifar_resnet1202(in_channels, num_classes)
+        case "vit5_small":
+            return vit5_small(img_size=image_size, in_chans=in_channels, num_classes=num_classes)
+        case "vit5_base":
+            return vit5_base(img_size=image_size, in_chans=in_channels, num_classes=num_classes)
+        case "vit5_large":
+            return vit5_large(img_size=image_size, in_chans=in_channels, num_classes=num_classes)
+        case "vit5_xlarge":
+            return vit5_xlarge(img_size=image_size, in_chans=in_channels, num_classes=num_classes)
         case _:
             raise NotImplementedError(
                 "The chosen model is invalid, please choose from the following: lenet, basic_nn, vgg16, segnet, resnet34, resnet50, cifar_resnet_{20, 32, 44, 56, 110, 1202}"
@@ -133,13 +145,15 @@ def pick_model(model: str, in_channels: int, num_classes: int) -> ModelImplem:
 
 def get_config(
     model: str, dataset: str
-) -> ImageNetTrainConfig | TrainConfig | BiSeNetV2TrainConfig:
+) -> ImageNetTrainConfig | TrainConfig | BiSeNetV2TrainConfig | ViTTrainConfig:
     config_class = None
     match [dataset, model]:
         case ["imagenet", _]:
             config_class = ImageNetTrainConfig
         case [_, "bisenetv2"]:
             config_class = BiSeNetV2TrainConfig
+        case [_, m] if m.startswith("vit"):
+            config_class = ViTTrainConfig
         case _:
             config_class = TrainConfig
     with open(f"configs/{dataset}.yaml", "r") as f:
@@ -159,7 +173,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = get_config(args.model, args.dataset)
     datamodule, task_type = pick_dataset(args.dataset, config)
-    model = pick_model(args.model, config.in_channels, config.num_classes)
+    model = pick_model(args.model, config.in_channels, config.num_classes, config.image_size)
     task = None
     match [task_type, args.model]:
         case ["image-classification", _]:
