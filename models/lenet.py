@@ -31,13 +31,5 @@ class LeNet(ModelImplem, pipeline_tag="image-classification"):
         x = self.conv(x)
         return self.classifier(x)
 
-    @staticmethod
-    def get_encoder_layer() -> nn.Sequential:
-        return nn.Sequential(
-            nn.Conv2d(1, kernel_size=5, padding=2, out_channels=6),
-            nn.Sigmoid(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(in_channels=6, kernel_size=5, out_channels=16),
-            nn.Sigmoid(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
+        return self.conv(x)

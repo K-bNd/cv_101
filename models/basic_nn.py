@@ -18,6 +18,5 @@ class BasicNN(ModelImplem, pipeline_tag="image-classification"):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
 
-    @staticmethod
-    def get_encoder_layer() -> nn.Sequential:
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError("BasicNN has no separable encoder layer")
