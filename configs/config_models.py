@@ -35,3 +35,22 @@ class ImageNetTrainConfig(TrainConfig):
 
 class BiSeNetV2TrainConfig(TrainConfig):
     seg_heads_loss_weight: float = 0.4
+
+
+class ViTTrainConfig(TrainConfig):
+    patch_size: int = 16
+    embed_dim: int = 768
+    depth: int = 12
+    num_heads: int = 12
+    mlp_ratio: float = 4.0
+    drop_rate: float = 0.0
+    attn_drop_rate: float = 0.0
+    drop_path_rate: float = 0.0
+    qkv_bias: bool = False
+    qk_norm: bool = False
+    num_registers: int = 0
+    rope: bool = False
+    reg_theta: int = 10000
+    layer_scale: bool = True
+    init_scale: float = 1e-4
+    ape: bool = True
