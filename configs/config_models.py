@@ -17,6 +17,7 @@ class TrainConfig(BaseModel):
     early_stopping_patience: int = 5
     num_workers: int = 4
     trivial_augment: bool = True
+    random_erasing: float = 0.1
     optimizer: Literal["Adam", "AdamW", "SGD"] = "SGD"
     optimizer_params: dict = {}
     lr_scheduler: Literal["step", "cosine"] = "cosine"

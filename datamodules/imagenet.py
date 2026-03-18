@@ -47,7 +47,9 @@ class ImageNetDataModule(L.LightningDataModule):
                 v2.TrivialAugmentWide() if config.trivial_augment else v2.Identity(),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
-                v2.RandomErasing(p=0.1),
+                v2.RandomErasing(p=config.random_erasing)
+                if config.random_erasing > 0
+                else v2.Identity(),
             ]
         )
         self.val_transform = v2.Compose(
