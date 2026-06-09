@@ -2,15 +2,12 @@ import huggingface_hub
 import lightning as L
 import torch
 from PIL import Image as PILImage  # To handle potential errors
+from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from torch.utils.data import DataLoader
 from torchvision.transforms import v2
 
 from configs.config_models import ImageNetTrainConfig
 from datasets import load_dataset  # Image is useful for type hinting
-
-# Define standard ImageNet normalization constants
-IMAGENET_MEAN = [0.485, 0.456, 0.406]
-IMAGENET_STD = [0.229, 0.224, 0.225]
 
 
 class ImageNetDataModule(L.LightningDataModule):
@@ -46,8 +43,10 @@ class ImageNetDataModule(L.LightningDataModule):
                 v2.RandomHorizontalFlip(),
                 v2.TrivialAugmentWide() if config.trivial_augment else v2.Identity(),
                 v2.ToDtype(torch.float32, scale=True),
-                v2.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
-                v2.RandomErasing(p=0.1),
+                v2.Normalize(mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD),
+                v2.RandomErasing(p=config.random_erasing)
+                if config.random_erasing > 0
+                else v2.Identity(),
             ]
         )
         self.val_transform = v2.Compose(
@@ -56,7 +55,7 @@ class ImageNetDataModule(L.LightningDataModule):
                 v2.Resize((256, 256)),
                 v2.CenterCrop((config.val_res, config.val_res)),
                 v2.ToDtype(torch.float32, scale=True),
-                v2.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
+                v2.Normalize(mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD),
             ]
         )
         self.test_transform = v2.Compose(
@@ -64,7 +63,7 @@ class ImageNetDataModule(L.LightningDataModule):
                 v2.ToImage(),
                 v2.Resize((config.val_res, config.val_res)),
                 v2.ToDtype(torch.float32, scale=True),
-                v2.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
+                v2.Normalize(mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD),
             ]
         )
 
@@ -141,7 +140,7 @@ class ImageNetDataModule(L.LightningDataModule):
             data_dir=self.hparams.data_dir,
             token=True,
             streaming=False,
-            trust_remote_code=True,  # Sometimes needed depending on dataset version/HF changes
+            trust_remote_code=True,  # ImageNet-1k from ILSVRC requires remote code execution
             revision="4603483700ee984ea9debe3ddbfdeae86f6489eb",  # freeze on the last commit from the script branch, parquet files don't work for now (02.03.2026)
         ).with_format("torch")
 
@@ -166,7 +165,6 @@ class ImageNetDataModule(L.LightningDataModule):
                     lambda x: self._apply_transforms(x, self.val_transform)
                 )
 
-            # Add setup for 'test' or 'predict' stages if needed similarly
             if stage == "test":
                 # Use streaming=True for IterableDataset behavior
                 self.test_dataset.set_transform(
@@ -213,7 +211,7 @@ class ImageNetDataModule(L.LightningDataModule):
             persistent_workers=self.config.num_workers > 0,
         )
 
-    def test_dataloader(self):  # Implement if you have a test split/stage
+    def test_dataloader(self):
         return DataLoader(
             self.test_dataset,
             batch_size=self.config.batch_size,

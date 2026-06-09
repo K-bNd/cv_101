@@ -2,7 +2,6 @@ from typing import Literal
 
 import lightning as L
 import torch
-import torch.nn as nn
 
 from datamodules import (
     CIFAR10DataModule,
@@ -16,8 +15,8 @@ from datamodules import (
 from models import (
     VGG16,
     BiSeNetV2,
-    ConvNeXt,
     LeNet,
+    ModelImplem,
     ResNet34,
     ResNet50,
     SegNet,
@@ -26,6 +25,10 @@ from models import (
     cifar_resnet44,
     cifar_resnet56,
     cifar_resnet110,
+    vit5_base,
+    vit5_large,
+    vit5_small,
+    vit5_xlarge,
 )
 from models.cifar_resnet import cifar_resnet1202
 from task import BasicClassification, BasicSegmentation, BiSeNetV2Segmentation
@@ -48,13 +51,20 @@ from lightning.pytorch.callbacks import (
 from lightning.pytorch.loggers import WandbLogger
 from yaml import FullLoader, load
 
-from configs import BiSeNetV2TrainConfig, ImageNetTrainConfig, TrainConfig
+from configs import (
+    BiSeNetV2TrainConfig,
+    ImageNetTrainConfig,
+    TrainConfig,
+    ViTTrainConfig,
+)
+from utils.model_card import create_model_card
 
 
 def pick_dataset(
     dataset: str, config: TrainConfig | ImageNetTrainConfig | BiSeNetV2TrainConfig
 ) -> tuple[
-    L.LightningDataModule, Literal["classification", "segmentation", "object_detection"]
+    L.LightningDataModule,
+    Literal["image-classification", "image-segmentation", "object-detection"],
 ]:
     """Init datamodule based on the dataset name
     Args:
@@ -62,9 +72,9 @@ def pick_dataset(
         config (TrainConfig): config info
     Returns:
         datamodule (L.LightningDataModule): The datamodule
-        task_type (Literal["classification", "segmentation"]): The type of task
+        task_type (Literal["image-classification", "image-segmentation", "object-detection"]): The HF pipeline tag
     """
-    task_type = "classification"
+    task_type = "image-classification"
     match dataset:
         case "cifar10":
             datamodule = CIFAR10DataModule(config)
@@ -74,21 +84,21 @@ def pick_dataset(
             datamodule = MNISTDataModule(config)
         case "oxford":
             datamodule = OxfordIITDataModule(config)
-            task_type = "segmentation"
+            task_type = "image-segmentation"
         case "imagenet":
             datamodule = ImageNetDataModule(config)
         case "voc_seg":
             datamodule = VOCSegmentationDataModule(config=config)
-            task_type = "segmentation"
+            task_type = "image-segmentation"
         case "nuimages_sem_seg":
             datamodule = NuImagesDataModule(config, task="semantic_segmentation")
-            task_type = "segmentation"
+            task_type = "image-segmentation"
         case "nuimages_ins_seg":
             datamodule = NuImagesDataModule(config, task="instance_segmentation")
-            task_type = "segmentation"
+            task_type = "image-segmentation"
         case "nuimages_obj_det":
             datamodule = NuImagesDataModule(config, task="object_detection")
-            task_type = "object_detection"
+            task_type = "object-detection"
         case _:
             raise NotImplementedError(
                 "The chosen dataset is invalid, please choose from the following: cifar10, imagenette, mnist, oxford"
@@ -97,7 +107,7 @@ def pick_dataset(
     return datamodule, task_type
 
 
-def pick_model(model: str, in_channels: int, num_classes: int) -> nn.Module:
+def pick_model(model: str, in_channels: int, num_classes: int, image_size: int = 224) -> ModelImplem:
     """Init model based on the model name"""
     match model:
         case "lenet":
@@ -126,6 +136,14 @@ def pick_model(model: str, in_channels: int, num_classes: int) -> nn.Module:
             return cifar_resnet1202(in_channels, num_classes)
         case "convnext":
             return ConvNeXt(in_channels, num_classes)
+        case "vit5_small":
+            return vit5_small(img_size=image_size, in_chans=in_channels, num_classes=num_classes)
+        case "vit5_base":
+            return vit5_base(img_size=image_size, in_chans=in_channels, num_classes=num_classes)
+        case "vit5_large":
+            return vit5_large(img_size=image_size, in_chans=in_channels, num_classes=num_classes)
+        case "vit5_xlarge":
+            return vit5_xlarge(img_size=image_size, in_chans=in_channels, num_classes=num_classes)
         case _:
             raise NotImplementedError(
                 "The chosen model is invalid, please choose from the following: lenet, basic_nn, vgg16, segnet, resnet34, resnet50, cifar_resnet_{20, 32, 44, 56, 110, 1202}"
@@ -134,13 +152,15 @@ def pick_model(model: str, in_channels: int, num_classes: int) -> nn.Module:
 
 def get_config(
     model: str, dataset: str
-) -> ImageNetTrainConfig | TrainConfig | BiSeNetV2TrainConfig:
+) -> ImageNetTrainConfig | TrainConfig | BiSeNetV2TrainConfig | ViTTrainConfig:
     config_class = None
     match [dataset, model]:
         case ["imagenet", _]:
             config_class = ImageNetTrainConfig
         case [_, "bisenetv2"]:
             config_class = BiSeNetV2TrainConfig
+        case [_, m] if m.startswith("vit"):
+            config_class = ViTTrainConfig
         case _:
             config_class = TrainConfig
     with open(f"configs/{dataset}.yaml", "r") as f:
@@ -160,14 +180,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = get_config(args.model, args.dataset)
     datamodule, task_type = pick_dataset(args.dataset, config)
-    model = pick_model(args.model, config.in_channels, config.num_classes)
+    model = pick_model(args.model, config.in_channels, config.num_classes, config.image_size)
     task = None
     match [task_type, args.model]:
-        case ["classification", _]:
+        case ["image-classification", _]:
             task = BasicClassification(config)
-        case ["segmentation", "bisenetv2"]:
+        case ["image-segmentation", "bisenetv2"]:
             task = BiSeNetV2Segmentation(config)
-        case ["segmentation", _]:
+        case ["image-segmentation", _]:
             task = BasicSegmentation(config)
         case _:
             raise NotImplementedError()
@@ -208,4 +228,15 @@ if __name__ == "__main__":
     trainer.test(task, datamodule=datamodule)
 
     if args.upload_model:
-        task.model.push_to_hub(f"{args.hf_username}/{args.model}_{args.dataset}")
+        repo_id = f"{args.hf_username}/{args.model}_{args.dataset}"
+        test_metrics = {
+            k: v.item()
+            for k, v in trainer.callback_metrics.items()
+            if k.startswith("test/")
+        }
+        wandb_url = wandb_logger.experiment.url if wandb_logger.experiment else None
+        card = create_model_card(
+            args.model, args.dataset, task_type, config, test_metrics, wandb_url
+        )  # task_type is already the HF pipeline tag
+        card.push_to_hub(repo_id)
+        task.model.push_to_hub(repo_id)

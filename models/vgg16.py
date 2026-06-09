@@ -1,18 +1,23 @@
 import torch
 import torch.nn as nn
+
 from utils import create_conv_block
-from huggingface_hub import PyTorchModelHubMixin
+
+from .model import ModelImplem
 
 
-class VGG16(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-classification", license="mit", tags=["arxiv:1409.1556"], repo_url="https://github.com/K-bNd/cv_101"):
+class VGG16(
+    ModelImplem,
+    pipeline_tag="image-classification",
+    tags=["arxiv:1409.1556"],
+):
     """VGG-16 architecture"""
 
     def __init__(self, num_classes: int = 10) -> None:
         super().__init__()
         self.conv = nn.Sequential(
             # Conv-1
-            *create_conv_block(in_channels=3, out_channels=64,
-                               kernel_size=3, stride=1),
+            *create_conv_block(in_channels=3, out_channels=64, kernel_size=3, stride=1),
             *create_conv_block(
                 in_channels=64, out_channels=64, kernel_size=3, stride=1
             ),
@@ -68,58 +73,7 @@ class VGG16(nn.Module, PyTorchModelHubMixin, pipeline_tag="image-classification"
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        conv_output = self.conv(x)
-        return self.dense(conv_output)
+        return self.dense(self.forward_features(x))
 
-    @staticmethod
-    def get_encoder_layer():
-        return nn.Sequential(
-            # Conv-1
-            *create_conv_block(in_channels=3, out_channels=64,
-                               kernel_size=3, stride=1),
-            *create_conv_block(
-                in_channels=64, out_channels=64, kernel_size=3, stride=1
-            ),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            # Conv-2
-            *create_conv_block(
-                in_channels=64, out_channels=128, kernel_size=3, stride=1
-            ),
-            *create_conv_block(
-                in_channels=128, out_channels=256, kernel_size=3, stride=1
-            ),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            # Conv-3
-            *create_conv_block(
-                in_channels=256, out_channels=256, kernel_size=3, stride=1
-            ),
-            *create_conv_block(
-                in_channels=256, out_channels=256, kernel_size=3, stride=1
-            ),
-            *create_conv_block(
-                in_channels=256, out_channels=512, kernel_size=3, stride=1
-            ),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            # Conv-4
-            *create_conv_block(
-                in_channels=512, out_channels=512, kernel_size=3, stride=1
-            ),
-            *create_conv_block(
-                in_channels=512, out_channels=512, kernel_size=3, stride=1
-            ),
-            *create_conv_block(
-                in_channels=512, out_channels=512, kernel_size=3, stride=1
-            ),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            # Conv-5
-            *create_conv_block(
-                in_channels=512, out_channels=512, kernel_size=3, stride=1
-            ),
-            *create_conv_block(
-                in_channels=512, out_channels=512, kernel_size=3, stride=1
-            ),
-            *create_conv_block(
-                in_channels=512, out_channels=512, kernel_size=3, stride=1
-            ),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
+        return self.conv(x)

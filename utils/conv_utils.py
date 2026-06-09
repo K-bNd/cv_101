@@ -3,7 +3,7 @@ from typing import Union
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from timm.layers import DropPath
+from timm.layers.drop import DropPath
 
 
 def create_conv_block(

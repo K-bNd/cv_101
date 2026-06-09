@@ -1,8 +1,10 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
+
+from .model import ModelImplem
 
 
-class LeNet(nn.Module):
+class LeNet(ModelImplem, pipeline_tag="image-classification"):
     """LeNet-5 Architecture"""
 
     def __init__(self, in_channels: int, num_classes: int = 10):
@@ -28,3 +30,6 @@ class LeNet(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.conv(x)
         return self.classifier(x)
+
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
+        return self.conv(x)
