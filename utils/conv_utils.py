@@ -31,6 +31,48 @@ def create_conv_block(
     ]
 
 
+def init_cnn_weights(module: nn.Module) -> None:
+    """He initialization for ReLU-based CNNs (He et al. 2015, arXiv:1502.01852).
+
+    Designed for ``model.apply(init_cnn_weights)``:
+    - Conv2d: Kaiming normal (``fan_out``, ``relu``) — matches torchvision ResNet
+    - Linear: small normal (std 0.01), zero bias — classification head
+    - BatchNorm2d / GroupNorm: weight 1, bias 0
+
+    Args:
+        module: a single module visited by ``nn.Module.apply``.
+    """
+    if isinstance(module, nn.Conv2d):
+        nn.init.kaiming_normal_(module.weight, mode="fan_out", nonlinearity="relu")
+        if module.bias is not None:
+            nn.init.zeros_(module.bias)
+    elif isinstance(module, nn.Linear):
+        nn.init.normal_(module.weight, std=0.01)
+        if module.bias is not None:
+            nn.init.zeros_(module.bias)
+    elif isinstance(module, (nn.BatchNorm2d, nn.GroupNorm)):
+        nn.init.ones_(module.weight)
+        nn.init.zeros_(module.bias)
+
+
+def zero_init_residual(model: nn.Module) -> None:
+    """Zero the last BatchNorm gamma in every residual branch (arXiv:1812.01187).
+
+    Each residual block then starts as an identity map, which stabilizes early
+    training of deep ResNets. Call this *after* ``model.apply(init_cnn_weights)``
+    (which resets every BN gamma to 1), never before.
+
+    Args:
+        model: the full model to scan for residual blocks.
+    """
+    for m in model.modules():
+        if isinstance(m, (ResidualBlock, BottleneckBlock, GatherExpansionBlock)):
+            for layer in reversed(m.conv):
+                if isinstance(layer, nn.BatchNorm2d):
+                    nn.init.zeros_(layer.weight)
+                    break
+
+
 # region ResNet
 
 

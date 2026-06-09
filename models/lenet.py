@@ -26,6 +26,14 @@ class LeNet(ModelImplem, pipeline_tag="image-classification"):
             nn.Linear(in_features=84, out_features=num_classes),
             nn.Softmax(dim=1),
         )
+        self.apply(self._init_weights)
+
+    def _init_weights(self, m: nn.Module) -> None:
+        """Xavier/Glorot init — matched to LeNet's Sigmoid activations."""
+        if isinstance(m, (nn.Conv2d, nn.Linear)):
+            nn.init.xavier_uniform_(m.weight)
+            if m.bias is not None:
+                nn.init.zeros_(m.bias)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.conv(x)

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from utils import create_conv_block
+from utils import create_conv_block, init_cnn_weights
 
 from .model import ModelImplem
 
@@ -71,6 +71,7 @@ class VGG16(
             nn.Linear(in_features=4096, out_features=1000),
             nn.Linear(in_features=1000, out_features=num_classes),
         )
+        self.apply(init_cnn_weights)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.dense(self.forward_features(x))

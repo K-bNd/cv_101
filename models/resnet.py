@@ -1,7 +1,13 @@
 import torch
 import torch.nn as nn
 
-from utils import BottleneckBlock, ResidualBlock, create_conv_block
+from utils import (
+    BottleneckBlock,
+    ResidualBlock,
+    create_conv_block,
+    init_cnn_weights,
+    zero_init_residual,
+)
 
 from .model import ModelImplem
 
@@ -23,6 +29,8 @@ class ResNet50(
             if num_classes == 1000
             else nn.Linear(in_features=1000, out_features=num_classes),
         )
+        self.apply(init_cnn_weights)
+        zero_init_residual(self)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.classifier(self.pool(self.encoder(x)))
@@ -200,6 +208,8 @@ class ResNet34(
             if num_classes == 1000
             else nn.Linear(in_features=1000, out_features=num_classes),
         )
+        self.apply(init_cnn_weights)
+        zero_init_residual(self)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.classifier(self.pool(self.encoder(x)))
