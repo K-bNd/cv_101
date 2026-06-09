@@ -2,7 +2,7 @@ import warnings
 from typing import Callable, Optional
 
 import lightning as L
-from timm.optim import Lamb
+from timm.optim import create_optimizer_v2
 from torch import nn, optim
 from torchmetrics import Accuracy
 from torchvision.transforms import v2
@@ -23,7 +23,7 @@ class BasicClassification(L.LightningModule):
         self.accuracy = Accuracy(task="multiclass", num_classes=config.num_classes)
         self.top5 = Accuracy(task="multiclass", num_classes=config.num_classes, top_k=5)
         self.preprocessing = None
-        self.loss_fn = nn.CrossEntropyLoss(label_smoothing=config.label_smoothing)
+        self.loss_fn = nn.BCEWithLogitsLoss() if config.use_bce else nn.CrossEntropyLoss(label_smoothing=config.label_smoothing)
 
         batch_transforms = []
         if isinstance(config, ImageNetTrainConfig) and config.mixup_alpha > 0:
@@ -109,18 +109,15 @@ class BasicClassification(L.LightningModule):
             if self.config.linear_scaling_lr
             else self.config.start_lr
         )
-        if self.config.optimizer.lower() == "lamb":
+        if "lamb" in self.config.optimizer.lower():
             if self.config.batch_size < 2048:
                 warnings.warn(
                     f"LAMB is designed for large-batch training (≥2048). "
                     f"Current batch_size={self.config.batch_size}.",
                     UserWarning,
                 )
-            optimizer = Lamb(self.parameters(), lr=start_lr, **self.config.optimizer_params)
-        else:
-            optimizer = getattr(optim, self.config.optimizer)(
-                self.parameters(), lr=start_lr, **self.config.optimizer_params
-            )
+        
+        optimizer = create_optimizer_v2(self.parameters(), opt=self.config.optimizer, lr=start_lr, **self.config.optimizer_params)
         warmup_epochs = min(int(self.config.epochs * 0.1), 5)
         main_epochs = self.config.epochs - warmup_epochs
         warmup_scheduler = optim.lr_scheduler.LinearLR(

@@ -25,6 +25,7 @@ class TrainConfig(BaseModel):
     ignore_index: int = 255
     label_smoothing: float = 0.0
     gradient_clip_val: float = 0.0
+    use_bce: bool = False
 
 
 class ImageNetTrainConfig(TrainConfig):
