@@ -25,9 +25,9 @@ from models import (
     cifar_resnet44,
     cifar_resnet56,
     cifar_resnet110,
-    vit5_small,
     vit5_base,
     vit5_large,
+    vit5_small,
     vit5_xlarge,
 )
 from models.cifar_resnet import cifar_resnet1202
@@ -51,7 +51,12 @@ from lightning.pytorch.callbacks import (
 from lightning.pytorch.loggers import WandbLogger
 from yaml import FullLoader, load
 
-from configs import BiSeNetV2TrainConfig, ImageNetTrainConfig, TrainConfig, ViTTrainConfig
+from configs import (
+    BiSeNetV2TrainConfig,
+    ImageNetTrainConfig,
+    TrainConfig,
+    ViTTrainConfig,
+)
 from utils.model_card import create_model_card
 
 
@@ -129,6 +134,8 @@ def pick_model(model: str, in_channels: int, num_classes: int, image_size: int =
             return cifar_resnet110(in_channels, num_classes)
         case "cifar_resnet_1202":
             return cifar_resnet1202(in_channels, num_classes)
+        case "convnext":
+            return ConvNeXt(in_channels, num_classes)
         case "vit5_small":
             return vit5_small(img_size=image_size, in_chans=in_channels, num_classes=num_classes)
         case "vit5_base":

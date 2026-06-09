@@ -8,6 +8,7 @@ from .cifar_resnet import (
     cifar_resnet110,
     cifar_resnet1202,
 )
+from .convnext import ConvNeXt
 from .lenet import LeNet
 from .model import ModelImplem
 from .resnet import ResNet34, ResNet50
