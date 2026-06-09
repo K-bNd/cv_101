@@ -490,6 +490,7 @@ class ConvNeXtBlock(nn.Module):
         super(ConvNeXtBlock, self).__init__()
         self.dwconv = nn.Conv2d(dim, dim, kernel_size=7, padding=3, groups=dim)
         self.norm = nn.LayerNorm(normalized_shape=[dim])
+        # pwconv1/pwconv2 are the pointwise (1x1) convs. Following the original ConvNeXt implementation, they are nn.Linear rather than nn.Conv2d(1x1)
         self.pwconv1 = nn.Linear(dim, 4 * dim)
         self.act = nn.GELU()
         self.pwconv2 = nn.Linear(4 * dim, dim)
