@@ -3,7 +3,7 @@ from functools import partial
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from model import ModelImplem
+from .model import ModelImplem
 from timm.layers.mlp import Mlp
 from timm.layers.patch_embed import PatchEmbed
 from timm.layers.weight_init import trunc_normal_
