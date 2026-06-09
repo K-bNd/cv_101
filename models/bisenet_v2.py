@@ -9,6 +9,8 @@ from utils import (
     SegmentationHead,
     StemBlock,
     create_conv_block,
+    init_cnn_weights,
+    zero_init_residual,
 )
 
 from .model import ModelImplem
@@ -152,6 +154,8 @@ class BiSeNetV2(
                 in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1
             ),
         )
+        self.apply(init_cnn_weights)
+        zero_init_residual(self)
 
     def forward(
         self, x: torch.Tensor, inference: bool = True

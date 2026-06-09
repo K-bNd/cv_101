@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from utils import create_conv_block
+from utils import create_conv_block, init_cnn_weights
 
 from .model import ModelImplem
 
@@ -218,6 +218,7 @@ class SegNet(
                 padding="same",
             ),
         )
+        self.apply(init_cnn_weights)
 
     def forward(self, x: torch.Tensor, inference=True) -> torch.Tensor:
         # region encoder

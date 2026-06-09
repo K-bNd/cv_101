@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from utils import ResidualBlock, create_conv_block
+from utils import ResidualBlock, create_conv_block, init_cnn_weights, zero_init_residual
 
 from .model import ModelImplem
 
@@ -34,6 +34,8 @@ class CIFAR_ResNet(
             nn.Flatten(),
             nn.Linear(in_features=64, out_features=num_classes),
         )
+        self.apply(init_cnn_weights)
+        zero_init_residual(self)
 
     def _make_layer(self, channels, num_blocks, stride):
         strides = [stride] + [1] * (num_blocks - 1)
