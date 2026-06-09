@@ -20,6 +20,7 @@ from models import (
     ResNet34,
     ResNet50,
     SegNet,
+    ConvNeXt,
     cifar_resnet20,
     cifar_resnet32,
     cifar_resnet44,
