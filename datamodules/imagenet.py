@@ -126,7 +126,7 @@ class ImageNetDataModule(L.LightningDataModule):
     def prepare_data(self):
         huggingface_hub.login(add_to_git_credential=False)
         self.full_train_dataset = load_dataset(
-            "imagenet-1k",
+            "ILSVRC/imagenet-1k",
             split="train",
             data_dir=self.hparams.data_dir,
             token=True,
@@ -135,7 +135,7 @@ class ImageNetDataModule(L.LightningDataModule):
             revision="4603483700ee984ea9debe3ddbfdeae86f6489eb",  # freeze on the last commit from the script branch, parquet files don't work for now (02.03.2026)
         ).with_format("torch")
         self.test_dataset = load_dataset(
-            "imagenet-1k",
+            "ILSVRC/imagenet-1k",
             split="validation",
             data_dir=self.hparams.data_dir,
             token=True,
@@ -178,7 +178,7 @@ class ImageNetDataModule(L.LightningDataModule):
             print("Potential Issues & Solutions:")
             print("  1. Authentication: Did you run `huggingface-cli login`?")
             print(
-                "  2. Dataset Access: Did you accept terms on https://huggingface.co/datasets/imagenet-1k ?"
+                "  2. Dataset Access: Did you accept terms on https://huggingface.co/datasets/ILSVRC/imagenet-1k ?"
             )
             print("  3. Network: Check your internet connection.")
             print(
