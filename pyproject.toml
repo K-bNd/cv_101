@@ -20,3 +20,44 @@ dependencies = [
     "torchvision>=0.21.0",
     "wandb>=0.19.9",
 ]
+
+[project.optional-dependencies]
+# CUDA 12.8 wheels (torch >= 2.7)
+cu128 = [
+    "torch>=2.7.0",
+    "torchvision>=0.22.0",
+]
+# CUDA 13.0 wheels (torch >= 2.9)
+cu130 = [
+    "torch>=2.9.0",
+    "torchvision>=0.24.0",
+]
+
+[tool.uv]
+# Only one CUDA build can be installed at a time.
+conflicts = [
+    [
+        { extra = "cu128" },
+        { extra = "cu130" },
+    ],
+]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cu128", extra = "cu128" },
+    { index = "pytorch-cu130", extra = "cu130" },
+]
+torchvision = [
+    { index = "pytorch-cu128", extra = "cu128" },
+    { index = "pytorch-cu130", extra = "cu130" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
